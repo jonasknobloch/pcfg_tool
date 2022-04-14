@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
-	"pcfg_tool/pkg/pcfg"
+	"pcfg_tool/internal/pcfg"
 )
 
 var induceCmd = &cobra.Command{

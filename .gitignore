@@ -1,0 +1,7 @@
+material
+tests
+pcfg_tool*
+tests.mk
+*.lexicon
+*.rules
+*.words

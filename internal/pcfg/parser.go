@@ -12,11 +12,12 @@ type Span struct {
 
 type Item struct {
 	Span
-	p float64
+	weight     float64
+	backtracks [2]*Item
 }
 
 func (i *Item) Weight() float64 {
-	return i.p
+	return i.weight
 }
 
 func (i *Item) String() string {
@@ -29,7 +30,6 @@ type Parser struct {
 	heap    Heap
 	matcher Matcher
 	rules   map[string][]Rule
-	trace   map[*Item][2]*Item
 }
 
 func NewParser(g *Grammar) *Parser {
@@ -69,8 +69,6 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 
 	p.heap = *NewHeap()
 	p.matcher = *NewMatcher()
-
-	p.trace = make(map[*Item][2]*Item)
 
 	p.Initialize()
 
@@ -129,7 +127,7 @@ func (p *Parser) Initialize() {
 				j: i + 1,
 				n: t,
 			},
-			p: 1,
+			weight: 1,
 		}
 
 		for _, r := range p.Rules(t) {
@@ -143,12 +141,11 @@ func (p *Parser) Initialize() {
 					j: i + 1,
 					n: r.Head(),
 				},
-				p: 1,
+				weight:     1,
+				backtracks: [2]*Item{terminal, nil},
 			}
 
 			p.heap.Push(lexical)
-
-			p.trace[lexical] = [2]*Item{terminal, nil}
 		}
 	}
 }
@@ -170,10 +167,9 @@ func (p *Parser) Combine(c1, c2 *Item, r Rule) {
 			j: c2.j,
 			n: r.Head(),
 		},
-		p: c1.Weight() * c2.Weight() * p.grammar.Weight(r),
+		weight:     c1.Weight() * c2.Weight() * p.grammar.Weight(r),
+		backtracks: [2]*Item{c1, c2},
 	}
-
-	p.trace[i] = [2]*Item{c1, c2}
 
 	p.heap.Push(i)
 }
@@ -185,44 +181,38 @@ func (p *Parser) Chain(c *Item, r Rule) {
 			j: c.j,
 			n: r.Head(),
 		},
-		p: c.Weight() * p.grammar.Weight(r),
+		weight:     c.Weight() * p.grammar.Weight(r),
+		backtracks: [2]*Item{c, nil},
 	}
-
-	p.trace[i] = [2]*Item{c, nil}
 
 	p.heap.Push(i)
 }
 
 func (p *Parser) Tree(root *Item) *tree.Tree {
-	var trace func(item *Item) *tree.Tree
-	trace = func(item *Item) *tree.Tree {
+	var backtrack func(item *Item) *tree.Tree
+	backtrack = func(item *Item) *tree.Tree {
 		t := &tree.Tree{
 			Label:    item.n,
 			Children: nil,
 		}
 
-		var li, ri *Item
+		li, ri := item.backtracks[0], item.backtracks[1]
 
-		if pred, ok := p.trace[item]; !ok {
-			return t
-		} else {
-			li, ri = pred[0], pred[1]
+		if li != nil && ri != nil {
+			t.Children = []*tree.Tree{
+				backtrack(li),
+				backtrack(ri),
+			}
 		}
 
-		if ri == nil {
-			t.Children = make([]*tree.Tree, 1)
-		} else {
-			t.Children = make([]*tree.Tree, 2)
-		}
-
-		t.Children[0] = trace(li)
-
-		if ri != nil {
-			t.Children[1] = trace(ri)
+		if li != nil && ri == nil {
+			t.Children = []*tree.Tree{
+				backtrack(li),
+			}
 		}
 
 		return t
 	}
 
-	return trace(root)
+	return backtrack(root)
 }

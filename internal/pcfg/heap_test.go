@@ -5,9 +5,9 @@ import (
 )
 
 func TestHeap(t *testing.T) {
-	foo := &Item{p: 0.75}
-	bar := &Item{p: 0.25}
-	baz := &Item{p: 0.5}
+	foo := &Item{weight: 0.75}
+	bar := &Item{weight: 0.25}
+	baz := &Item{weight: 0.5}
 
 	h := NewHeap()
 

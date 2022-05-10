@@ -5,10 +5,14 @@ import (
 	"github.com/jonasknobloch/jinn/pkg/tree"
 )
 
-type Item struct {
+type Span struct {
 	i, j int
 	n    string
-	p    float64
+}
+
+type Item struct {
+	Span
+	p float64
 }
 
 func (i *Item) Weight() float64 {
@@ -120,9 +124,11 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 func (p *Parser) Initialize() {
 	for i, t := range p.tokens {
 		terminal := &Item{
-			i: i,
-			j: i + 1,
-			n: t,
+			Span: Span{
+				i: i,
+				j: i + 1,
+				n: t,
+			},
 			p: 1,
 		}
 
@@ -132,9 +138,11 @@ func (p *Parser) Initialize() {
 			}
 
 			lexical := &Item{
-				i: i,
-				j: i + 1,
-				n: r.Head(),
+				Span: Span{
+					i: i,
+					j: i + 1,
+					n: r.Head(),
+				},
 				p: 1,
 			}
 
@@ -157,9 +165,11 @@ func (p *Parser) Rules(body string) []Rule {
 
 func (p *Parser) Combine(c1, c2 *Item, r Rule) {
 	i := &Item{
-		i: c1.i,
-		j: c2.j,
-		n: r.Head(),
+		Span: Span{
+			i: c1.i,
+			j: c2.j,
+			n: r.Head(),
+		},
 		p: c1.Weight() * c2.Weight() * p.grammar.Weight(r),
 	}
 
@@ -170,9 +180,11 @@ func (p *Parser) Combine(c1, c2 *Item, r Rule) {
 
 func (p *Parser) Chain(c *Item, r Rule) {
 	i := &Item{
-		i: c.i,
-		j: c.j,
-		n: r.Head(),
+		Span: Span{
+			i: c.i,
+			j: c.j,
+			n: r.Head(),
+		},
 		p: c.Weight() * p.grammar.Weight(r),
 	}
 
@@ -182,7 +194,7 @@ func (p *Parser) Chain(c *Item, r Rule) {
 }
 
 func (p *Parser) Tree(root *Item) *tree.Tree {
-	var trace func(*Item) *tree.Tree
+	var trace func(item *Item) *tree.Tree
 	trace = func(item *Item) *tree.Tree {
 		t := &tree.Tree{
 			Label:    item.n,

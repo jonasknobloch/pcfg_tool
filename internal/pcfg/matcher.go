@@ -11,24 +11,24 @@ type rKey struct {
 }
 
 type Matcher struct {
-	items map[Item]struct{}
+	items map[Span]struct{}
 	left  map[lKey][]*Item
 	right map[rKey][]*Item
 }
 
 func NewMatcher() *Matcher {
 	return &Matcher{
-		items: make(map[Item]struct{}),
+		items: make(map[Span]struct{}),
 		left:  make(map[lKey][]*Item),
 		right: make(map[rKey][]*Item),
 	}
 }
 
 func (m *Matcher) Add(i *Item) bool {
-	if _, ok := m.items[*i]; ok {
+	if _, ok := m.items[i.Span]; ok {
 		return false
 	} else {
-		m.items[*i] = struct{}{}
+		m.items[i.Span] = struct{}{}
 	}
 
 	lk := lKey{

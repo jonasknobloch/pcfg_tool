@@ -23,7 +23,7 @@ func (i *Item) String() string {
 type Parser struct {
 	tokens  []string
 	grammar Grammar
-	queue   Queue
+	heap    Heap
 	matcher Matcher
 	rules   map[string][]Rule
 	trace   map[*Item][2]*Item
@@ -51,15 +51,15 @@ func NewParser(g *Grammar) *Parser {
 func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 	p.tokens = tokens
 
-	p.queue = *NewQueue()
+	p.heap = *NewHeap()
 	p.matcher = *NewMatcher()
 
 	p.trace = make(map[*Item][2]*Item)
 
 	p.Initialize()
 
-	for len(p.queue) > 0 {
-		item := p.queue.Dequeue().(*Item)
+	for !p.heap.Empty() {
+		item, _ := p.heap.Pop()
 
 		if ok := p.matcher.Add(item); !ok {
 			continue
@@ -108,7 +108,7 @@ func (p *Parser) Initialize() {
 				p: 1,
 			}
 
-			p.queue.Enqueue(lexical)
+			p.heap.Push(lexical)
 
 			p.trace[lexical] = [2]*Item{terminal, nil}
 		}
@@ -146,7 +146,7 @@ func (p *Parser) Combine(c1, c2 *Item, r Rule) {
 
 	p.trace[i] = [2]*Item{c1, c2}
 
-	p.queue.Enqueue(i)
+	p.heap.Push(i)
 }
 
 func (p *Parser) Chain(c *Item, r Rule) {
@@ -159,7 +159,7 @@ func (p *Parser) Chain(c *Item, r Rule) {
 
 	p.trace[i] = [2]*Item{c, nil}
 
-	p.queue.Enqueue(i)
+	p.heap.Push(i)
 }
 
 func (p *Parser) Tree(root *Item) *tree.Tree {

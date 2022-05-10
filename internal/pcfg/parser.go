@@ -3,7 +3,6 @@ package pcfg
 import (
 	"fmt"
 	"github.com/jonasknobloch/jinn/pkg/tree"
-	"strings"
 )
 
 type Item struct {
@@ -25,15 +24,28 @@ type Parser struct {
 	grammar Grammar
 	heap    Heap
 	matcher Matcher
-	rules   map[string][]Rule
+	rules   map[[2]string][]Rule
 	trace   map[*Item][2]*Item
 }
 
 func NewParser(g *Grammar) *Parser {
-	rules := make(map[string][]Rule)
+	rules := make(map[[2]string][]Rule)
 
 	for r := range g.weights {
-		b := r.Body()
+		var b [2]string
+
+		switch v := r.(type) {
+		case *Lexical:
+			b = [2]string{v.body}
+		case *NonLexical:
+			b = [2]string{v.body[0]}
+
+			if len(v.body) == 2 {
+				b[1] = v.body[1]
+			}
+		default:
+			panic("unknown rule type")
+		}
 
 		if _, ok := rules[b]; !ok {
 			rules[b] = make([]Rule, 0)
@@ -72,18 +84,18 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		left, right := p.matcher.Match(item)
 
 		for _, li := range left {
-			for _, r := range p.Rules(li.n, item.n) {
+			for _, r := range p.Rules([2]string{li.n, item.n}) {
 				p.Combine(li, item, r)
 			}
 		}
 
 		for _, ri := range right {
-			for _, r := range p.Rules(item.n, ri.n) {
+			for _, r := range p.Rules([2]string{item.n, ri.n}) {
 				p.Combine(item, ri, r)
 			}
 		}
 
-		for _, r := range p.Rules(item.n) {
+		for _, r := range p.Rules([2]string{item.n}) {
 			p.Chain(item, r)
 		}
 	}
@@ -100,7 +112,7 @@ func (p *Parser) Initialize() {
 			p: 1,
 		}
 
-		for _, r := range p.Rules(t) {
+		for _, r := range p.Rules([2]string{t}) {
 			lexical := &Item{
 				i: i,
 				j: i + 1,
@@ -115,18 +127,7 @@ func (p *Parser) Initialize() {
 	}
 }
 
-func (p *Parser) Rules(args ...string) []Rule {
-	var body string
-
-	switch len(args) {
-	case 0:
-		panic("args should not be empty")
-	case 1:
-		body = args[0]
-	default:
-		body = strings.Join(args, " ")
-	}
-
+func (p *Parser) Rules(body [2]string) []Rule {
 	rules, ok := p.rules[body]
 
 	if !ok {

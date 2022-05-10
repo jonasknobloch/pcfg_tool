@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"os"
+	"pcfg_tool/internal/pcfg"
 )
 
 var parseCmd = &cobra.Command{
@@ -10,7 +11,10 @@ var parseCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		os.Exit(22)
+		stdin := os.Stdin
+		defer stdin.Close()
+
+		pcfg.Parse(args[0], args[1], stdin)
 	},
 }
 

@@ -1,16 +1,26 @@
 package pcfg
 
+type lKey struct {
+	int
+	string
+}
+
+type rKey struct {
+	string
+	int
+}
+
 type Matcher struct {
 	items map[Item]struct{}
-	left  map[int][]*Item
-	right map[int][]*Item
+	left  map[lKey][]*Item
+	right map[rKey][]*Item
 }
 
 func NewMatcher() *Matcher {
 	return &Matcher{
 		items: make(map[Item]struct{}),
-		left:  make(map[int][]*Item),
-		right: make(map[int][]*Item),
+		left:  make(map[lKey][]*Item),
+		right: make(map[rKey][]*Item),
 	}
 }
 
@@ -21,20 +31,56 @@ func (m *Matcher) Add(i *Item) bool {
 		m.items[*i] = struct{}{}
 	}
 
-	if _, ok := m.left[i.i]; !ok {
-		m.left[i.i] = make([]*Item, 0)
+	lk := lKey{
+		int:    i.i,
+		string: i.n,
 	}
 
-	if _, ok := m.right[i.j]; !ok {
-		m.right[i.j] = make([]*Item, 0)
+	rk := rKey{
+		string: i.n,
+		int:    i.j,
 	}
 
-	m.left[i.i] = append(m.left[i.i], i)
-	m.right[i.j] = append(m.right[i.j], i)
+	if _, ok := m.left[lk]; !ok {
+		m.left[lk] = make([]*Item, 0)
+	}
+
+	if _, ok := m.right[rk]; !ok {
+		m.right[rk] = make([]*Item, 0)
+	}
+
+	m.left[lk] = append(m.left[lk], i)
+	m.right[rk] = append(m.right[rk], i)
 
 	return true
 }
 
-func (m *Matcher) Match(item *Item) ([]*Item, []*Item) {
-	return m.right[item.i], m.left[item.j]
+func (m *Matcher) MatchLeft(i int, n string) []*Item {
+	lk := lKey{
+		int:    i,
+		string: n,
+	}
+
+	items, ok := m.left[lk]
+
+	if !ok {
+		return []*Item{}
+	}
+
+	return items
+}
+
+func (m *Matcher) MatchRight(n string, j int) []*Item {
+	rk := rKey{
+		string: n,
+		int:    j,
+	}
+
+	items, ok := m.right[rk]
+
+	if !ok {
+		return []*Item{}
+	}
+
+	return items
 }

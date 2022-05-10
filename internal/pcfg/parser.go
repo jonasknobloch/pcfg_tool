@@ -24,34 +24,34 @@ type Parser struct {
 	grammar Grammar
 	heap    Heap
 	matcher Matcher
-	rules   map[[2]string][]Rule
+	rules   map[string][]Rule
 	trace   map[*Item][2]*Item
 }
 
 func NewParser(g *Grammar) *Parser {
-	rules := make(map[[2]string][]Rule)
+	rules := make(map[string][]Rule)
+
+	add := func(k string, r Rule) {
+		if _, ok := rules[k]; !ok {
+			rules[k] = make([]Rule, 0)
+		}
+
+		rules[k] = append(rules[k], r)
+	}
 
 	for r := range g.weights {
-		var b [2]string
-
 		switch v := r.(type) {
 		case *Lexical:
-			b = [2]string{v.body}
+			add(v.body, r)
 		case *NonLexical:
-			b = [2]string{v.body[0]}
+			add(v.body[0], r)
 
-			if len(v.body) == 2 {
-				b[1] = v.body[1]
+			if v.body[len(v.body)-1] != v.body[0] {
+				add(v.body[len(v.body)-1], r)
 			}
 		default:
 			panic("unknown rule type")
 		}
-
-		if _, ok := rules[b]; !ok {
-			rules[b] = make([]Rule, 0)
-		}
-
-		rules[b] = append(rules[b], r)
 	}
 
 	return &Parser{
@@ -81,22 +81,36 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 			return p.Tree(item), true
 		}
 
-		left, right := p.matcher.Match(item)
+		rules, ok := p.rules[item.n]
 
-		for _, li := range left {
-			for _, r := range p.Rules([2]string{li.n, item.n}) {
-				p.Combine(li, item, r)
-			}
+		if !ok {
+			continue
 		}
 
-		for _, ri := range right {
-			for _, r := range p.Rules([2]string{item.n, ri.n}) {
-				p.Combine(item, ri, r)
-			}
-		}
+		for _, rule := range rules {
+			lexical, ok := rule.(*NonLexical)
 
-		for _, r := range p.Rules([2]string{item.n}) {
-			p.Chain(item, r)
+			if !ok {
+				continue
+			}
+
+			if len(lexical.body) == 2 {
+				if lexical.body[0] == item.n {
+					for _, c := range p.matcher.MatchLeft(item.j, lexical.body[1]) {
+						p.Combine(item, c, rule)
+					}
+				}
+
+				if lexical.body[1] == item.n {
+					for _, c := range p.matcher.MatchRight(lexical.body[0], item.i) {
+						p.Combine(c, item, rule)
+					}
+				}
+			}
+
+			if len(lexical.body) == 1 {
+				p.Chain(item, rule)
+			}
 		}
 	}
 
@@ -112,7 +126,11 @@ func (p *Parser) Initialize() {
 			p: 1,
 		}
 
-		for _, r := range p.Rules([2]string{t}) {
+		for _, r := range p.Rules(t) {
+			if _, ok := r.(*Lexical); !ok {
+				continue
+			}
+
 			lexical := &Item{
 				i: i,
 				j: i + 1,
@@ -127,7 +145,7 @@ func (p *Parser) Initialize() {
 	}
 }
 
-func (p *Parser) Rules(body [2]string) []Rule {
+func (p *Parser) Rules(body string) []Rule {
 	rules, ok := p.rules[body]
 
 	if !ok {

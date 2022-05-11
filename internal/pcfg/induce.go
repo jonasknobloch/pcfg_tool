@@ -46,7 +46,11 @@ func EvaluateTree(t *tree.Tree, g *Grammar) {
 			return
 		}
 
-		r := NewRule(t)
+		r, err := NewRule(t)
+
+		if err != nil {
+			return
+		}
 
 		g.AddRule(r, 1)
 	})

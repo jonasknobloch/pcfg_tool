@@ -1,6 +1,7 @@
 package pcfg
 
 import (
+	"errors"
 	"github.com/jonasknobloch/jinn/pkg/tree"
 	"strings"
 )
@@ -44,16 +45,16 @@ func (nl *NonLexical) String() string {
 	return nl.Head() + " -> " + nl.Body()
 }
 
-func NewRule(t *tree.Tree) Rule {
+func NewRule(t *tree.Tree) (Rule, error) {
 	if len(t.Children) == 0 {
-		panic("foo")
+		return nil, errors.New("tree has no children")
 	}
 
 	if len(t.Children[0].Children) == 0 {
 		return &Lexical{
 			head: t.Label,
 			body: t.Children[0].Label,
-		}
+		}, nil
 	}
 
 	body := func(ts []*tree.Tree) []string {
@@ -69,5 +70,5 @@ func NewRule(t *tree.Tree) Rule {
 	return &NonLexical{
 		head: t.Label,
 		body: body,
-	}
+	}, nil
 }

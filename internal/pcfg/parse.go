@@ -27,7 +27,7 @@ func Parse(rules, lexicon string, file *os.File) {
 		t, ok := p.Parse(tokens)
 
 		if !ok {
-			fmt.Printf("(NO PARSE %s)\n", strings.Join(p.tokens, " "))
+			fmt.Printf("(NOPARSE %s)\n", strings.Join(p.tokens, " "))
 		} else {
 			fmt.Println(t)
 		}

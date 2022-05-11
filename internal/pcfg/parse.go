@@ -28,8 +28,8 @@ func Parse(rules, lexicon string, file *os.File) {
 
 		if !ok {
 			fmt.Printf("(NO PARSE %s)\n", strings.Join(p.tokens, " "))
+		} else {
+			fmt.Println(t)
 		}
-
-		fmt.Println(t)
 	}
 }

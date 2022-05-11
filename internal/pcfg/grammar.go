@@ -17,11 +17,14 @@ type Grammar struct {
 
 func NewGrammar() *Grammar {
 	return &Grammar{
-		initial:   "ROOT", // TODO from flag?
 		weights:   make(map[Rule]float64),
 		rules:     make(map[string]map[string]Rule),
 		terminals: make(map[string]struct{}),
 	}
+}
+
+func (g *Grammar) SetInitial(n string) {
+	g.initial = n
 }
 
 func (g *Grammar) AddRule(rule Rule, weight float64) {

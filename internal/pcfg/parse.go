@@ -8,14 +8,20 @@ import (
 	"strings"
 )
 
-func Parse(rules, lexicon string, file *os.File) {
+func Parse(rules, lexicon string, n string, file *os.File) {
 	g := NewGrammar()
+
+	g.SetInitial(n)
 
 	if err := g.Import(rules, lexicon); err != nil {
 		log.Fatal(err)
 	}
 
-	p := NewParser(g)
+	p, err := NewParser(g)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fs := bufio.NewScanner(file)
 

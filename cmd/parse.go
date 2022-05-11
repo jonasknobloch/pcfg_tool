@@ -14,7 +14,9 @@ var parseCmd = &cobra.Command{
 		stdin := os.Stdin
 		defer stdin.Close()
 
-		pcfg.Parse(args[0], args[1], stdin)
+		n := cmd.Flag("initial-nonterminal").Value.String()
+
+		pcfg.Parse(args[0], args[1], n, stdin)
 	},
 }
 

@@ -1,6 +1,7 @@
 package pcfg
 
 import (
+	"errors"
 	"fmt"
 	"github.com/jonasknobloch/jinn/pkg/tree"
 )
@@ -32,7 +33,11 @@ type Parser struct {
 	rules   map[string][]Rule
 }
 
-func NewParser(g *Grammar) *Parser {
+func NewParser(g *Grammar) (*Parser, error) {
+	if g.initial == "" {
+		return nil, errors.New("grammar initial not set")
+	}
+
 	rules := make(map[string][]Rule)
 
 	add := func(k string, r Rule) {
@@ -61,7 +66,7 @@ func NewParser(g *Grammar) *Parser {
 	return &Parser{
 		grammar: *g,
 		rules:   rules,
-	}
+	}, nil
 }
 
 func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {

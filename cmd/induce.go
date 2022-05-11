@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"log"
-	"os"
 	"pcfg_tool/internal/pcfg"
 )
 
@@ -12,10 +11,8 @@ var induceCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		stdin := os.Stdin
+		stdin := OpenStdin()
 		defer stdin.Close()
-
-		// TODO file, err := os.Open("material/large/training.mrg")
 
 		g := pcfg.Induce(stdin)
 

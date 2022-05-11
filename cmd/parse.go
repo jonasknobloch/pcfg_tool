@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"os"
 	"pcfg_tool/internal/pcfg"
 )
 
@@ -11,7 +10,7 @@ var parseCmd = &cobra.Command{
 	Short: "A brief description of your command",
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		stdin := os.Stdin
+		stdin := OpenStdin()
 		defer stdin.Close()
 
 		n := cmd.Flag("initial-nonterminal").Value.String()

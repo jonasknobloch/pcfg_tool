@@ -85,7 +85,7 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		}
 
 		if item.n == p.grammar.initial && item.i == 0 && item.j == len(p.tokens) {
-			return p.Tree(item), true
+			return p.Tree(item, tokens), true
 		}
 
 		rules, ok := p.rules[item.n]
@@ -126,15 +126,6 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 
 func (p *Parser) Initialize() {
 	for i, t := range p.tokens {
-		terminal := &Item{
-			Span: Span{
-				i: i,
-				j: i + 1,
-				n: t,
-			},
-			weight: 1,
-		}
-
 		for _, r := range p.Rules(t) {
 			if _, ok := r.(*Lexical); !ok {
 				continue
@@ -146,8 +137,7 @@ func (p *Parser) Initialize() {
 					j: i + 1,
 					n: r.Head(),
 				},
-				weight:     p.grammar.Weight(r),
-				backtracks: [2]*Item{terminal, nil},
+				weight: p.grammar.Weight(r),
 			}
 
 			p.heap.Push(lexical)
@@ -193,12 +183,11 @@ func (p *Parser) Chain(c *Item, r Rule) {
 	p.heap.Push(i)
 }
 
-func (p *Parser) Tree(root *Item) *tree.Tree {
+func (p *Parser) Tree(root *Item, tokens []string) *tree.Tree {
 	var backtrack func(item *Item) *tree.Tree
 	backtrack = func(item *Item) *tree.Tree {
 		t := &tree.Tree{
-			Label:    item.n,
-			Children: nil,
+			Label: item.n,
 		}
 
 		li, ri := item.backtracks[0], item.backtracks[1]
@@ -213,6 +202,14 @@ func (p *Parser) Tree(root *Item) *tree.Tree {
 		if li != nil && ri == nil {
 			t.Children = []*tree.Tree{
 				backtrack(li),
+			}
+		}
+
+		if li == nil && ri == nil {
+			t.Children = []*tree.Tree{
+				{
+					Label: tokens[item.i],
+				},
 			}
 		}
 

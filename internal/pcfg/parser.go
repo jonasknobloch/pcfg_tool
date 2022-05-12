@@ -146,7 +146,7 @@ func (p *Parser) Initialize() {
 					j: i + 1,
 					n: r.Head(),
 				},
-				weight:     1,
+				weight:     p.grammar.Weight(r),
 				backtracks: [2]*Item{terminal, nil},
 			}
 

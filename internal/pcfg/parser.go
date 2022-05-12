@@ -6,9 +6,15 @@ import (
 	"github.com/jonasknobloch/jinn/pkg/tree"
 )
 
+type NonLexicalInt struct {
+	head int
+	body []int
+	rule *NonLexical
+}
+
 type Span struct {
 	i, j int
-	n    string
+	n    int
 }
 
 type Item struct {
@@ -22,7 +28,7 @@ func (i *Item) Weight() float64 {
 }
 
 func (i *Item) String() string {
-	return fmt.Sprintf("(%d,%s,%d)#%.2f", i.i, i.n, i.j, i.Weight())
+	return fmt.Sprintf("(%d,%d,%d)#%.2f", i.i, i.n, i.j, i.Weight())
 }
 
 type Parser struct {
@@ -30,7 +36,10 @@ type Parser struct {
 	grammar Grammar
 	heap    Heap
 	matcher Matcher
-	rules   map[string][]Rule
+	symbols SymbolTable
+	initial int
+	lexicon map[string][]*Lexical
+	rules   map[int][]*NonLexicalInt
 }
 
 func NewParser(g *Grammar) (*Parser, error) {
@@ -38,35 +47,54 @@ func NewParser(g *Grammar) (*Parser, error) {
 		return nil, errors.New("grammar initial not set")
 	}
 
-	rules := make(map[string][]Rule)
+	p := &Parser{
+		grammar: *g,
+		symbols: *NewSymbolTable(),
+	}
 
-	add := func(k string, r Rule) {
-		if _, ok := rules[k]; !ok {
-			rules[k] = make([]Rule, 0)
+	p.lexicon = make(map[string][]*Lexical)
+	p.rules = make(map[int][]*NonLexicalInt)
+
+	addRule := func(k int, ir *NonLexicalInt) {
+		if _, ok := p.rules[k]; !ok {
+			p.rules[k] = make([]*NonLexicalInt, 0)
 		}
 
-		rules[k] = append(rules[k], r)
+		p.rules[k] = append(p.rules[k], ir)
+	}
+
+	if initial, err := p.symbols.Atoi(g.initial); err != nil {
+		return nil, err
+	} else {
+		p.initial = initial
 	}
 
 	for r := range g.weights {
 		switch v := r.(type) {
 		case *Lexical:
-			add(v.body, r)
-		case *NonLexical:
-			add(v.body[0], r)
+			if _, ok := p.lexicon[v.body]; !ok {
+				p.lexicon[v.body] = make([]*Lexical, 0)
+			}
 
-			if v.body[len(v.body)-1] != v.body[0] {
-				add(v.body[len(v.body)-1], r)
+			p.lexicon[v.body] = append(p.lexicon[v.body], v)
+		case *NonLexical:
+			ri, err := NonLexicalToNonLexicalInt(v, &p.symbols)
+
+			if err != nil {
+				return nil, err
+			}
+
+			addRule(ri.body[0], ri)
+
+			if ri.body[len(ri.body)-1] != ri.body[0] {
+				addRule(ri.body[len(ri.body)-1], ri)
 			}
 		default:
 			panic("unknown rule type")
 		}
 	}
 
-	return &Parser{
-		grammar: *g,
-		rules:   rules,
-	}, nil
+	return p, nil
 }
 
 func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
@@ -75,7 +103,11 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 	p.heap = *NewHeap()
 	p.matcher = *NewMatcher()
 
-	p.Initialize()
+	if err := p.Initialize(); err != nil {
+		// TODO handle
+
+		return nil, false
+	}
 
 	for !p.heap.Empty() {
 		item, _ := p.heap.Pop()
@@ -84,8 +116,8 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 			continue
 		}
 
-		if item.n == p.grammar.initial && item.i == 0 && item.j == len(p.tokens) {
-			return p.Tree(item), true
+		if item.n == p.initial && item.i == 0 && item.j == len(p.tokens) {
+			return p.Tree(item, tokens), true
 		}
 
 		rules, ok := p.rules[item.n]
@@ -95,27 +127,21 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		}
 
 		for _, rule := range rules {
-			nonLexical, ok := rule.(*NonLexical)
-
-			if !ok {
-				continue
-			}
-
-			if len(nonLexical.body) == 2 {
-				if nonLexical.body[0] == item.n {
-					for _, c := range p.matcher.MatchLeft(item.j, nonLexical.body[1]) {
+			if len(rule.body) == 2 {
+				if rule.body[0] == item.n {
+					for _, c := range p.matcher.MatchLeft(item.j, rule.body[1]) {
 						p.Combine(item, c, rule)
 					}
 				}
 
-				if nonLexical.body[1] == item.n {
-					for _, c := range p.matcher.MatchRight(nonLexical.body[0], item.i) {
+				if rule.body[1] == item.n {
+					for _, c := range p.matcher.MatchRight(rule.body[0], item.i) {
 						p.Combine(c, item, rule)
 					}
 				}
 			}
 
-			if len(nonLexical.body) == 1 {
+			if len(rule.body) == 1 {
 				p.Chain(item, rule)
 			}
 		}
@@ -124,27 +150,29 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 	return nil, false
 }
 
-func (p *Parser) Initialize() {
+func (p *Parser) Initialize() error {
 	for i, t := range p.tokens {
 		terminal := &Item{
 			Span: Span{
 				i: i,
 				j: i + 1,
-				n: t,
+				n: 0,
 			},
 			weight: 1,
 		}
 
-		for _, r := range p.Rules(t) {
-			if _, ok := r.(*Lexical); !ok {
-				continue
+		for _, r := range p.Lexicon(t) {
+			n, err := p.symbols.Atoi(r.head)
+
+			if err != nil {
+				return err
 			}
 
 			lexical := &Item{
 				Span: Span{
 					i: i,
 					j: i + 1,
-					n: r.Head(),
+					n: n,
 				},
 				weight:     1,
 				backtracks: [2]*Item{terminal, nil},
@@ -153,55 +181,76 @@ func (p *Parser) Initialize() {
 			p.heap.Push(lexical)
 		}
 	}
+
+	return nil
 }
 
-func (p *Parser) Rules(body string) []Rule {
+func (p *Parser) Lexicon(body string) []*Lexical {
+	lexicon, ok := p.lexicon[body]
+
+	if !ok {
+		lexicon = []*Lexical{}
+	}
+
+	return lexicon
+}
+
+func (p *Parser) Rules(body int) []*NonLexicalInt {
 	rules, ok := p.rules[body]
 
 	if !ok {
-		rules = []Rule{}
+		rules = []*NonLexicalInt{}
 	}
 
 	return rules
 }
 
-func (p *Parser) Combine(c1, c2 *Item, r Rule) {
+func (p *Parser) Combine(c1, c2 *Item, ri *NonLexicalInt) {
 	i := &Item{
 		Span: Span{
 			i: c1.i,
 			j: c2.j,
-			n: r.Head(),
+			n: ri.head,
 		},
-		weight:     c1.Weight() * c2.Weight() * p.grammar.Weight(r),
+		weight:     c1.Weight() * c2.Weight() * p.grammar.Weight(ri.rule),
 		backtracks: [2]*Item{c1, c2},
 	}
 
 	p.heap.Push(i)
 }
 
-func (p *Parser) Chain(c *Item, r Rule) {
+func (p *Parser) Chain(c *Item, ri *NonLexicalInt) {
 	i := &Item{
 		Span: Span{
 			i: c.i,
 			j: c.j,
-			n: r.Head(),
+			n: ri.head,
 		},
-		weight:     c.Weight() * p.grammar.Weight(r),
+		weight:     c.Weight() * p.grammar.Weight(ri.rule),
 		backtracks: [2]*Item{c, nil},
 	}
 
 	p.heap.Push(i)
 }
 
-func (p *Parser) Tree(root *Item) *tree.Tree {
+func (p *Parser) Tree(root *Item, token []string) *tree.Tree {
 	var backtrack func(item *Item) *tree.Tree
 	backtrack = func(item *Item) *tree.Tree {
-		t := &tree.Tree{
-			Label:    item.n,
-			Children: nil,
-		}
+		t := &tree.Tree{}
 
 		li, ri := item.backtracks[0], item.backtracks[1]
+
+		if li != nil || ri != nil {
+			label, ok := p.symbols.Itoa(item.n)
+
+			if !ok {
+				// TODO handle
+			}
+
+			t.Label = label
+		} else {
+			t.Label = token[item.i]
+		}
 
 		if li != nil && ri != nil {
 			t.Children = []*tree.Tree{

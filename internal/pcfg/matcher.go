@@ -1,13 +1,11 @@
 package pcfg
 
 type lKey struct {
-	int
-	string
+	i, n int
 }
 
 type rKey struct {
-	string
-	int
+	n, j int
 }
 
 type Matcher struct {
@@ -32,13 +30,13 @@ func (m *Matcher) Add(i *Item) bool {
 	}
 
 	lk := lKey{
-		int:    i.i,
-		string: i.n,
+		i: i.i,
+		n: i.n,
 	}
 
 	rk := rKey{
-		string: i.n,
-		int:    i.j,
+		n: i.n,
+		j: i.j,
 	}
 
 	if _, ok := m.left[lk]; !ok {
@@ -55,10 +53,10 @@ func (m *Matcher) Add(i *Item) bool {
 	return true
 }
 
-func (m *Matcher) MatchLeft(i int, n string) []*Item {
+func (m *Matcher) MatchLeft(i, n int) []*Item {
 	lk := lKey{
-		int:    i,
-		string: n,
+		i: i,
+		n: n,
 	}
 
 	items, ok := m.left[lk]
@@ -70,10 +68,10 @@ func (m *Matcher) MatchLeft(i int, n string) []*Item {
 	return items
 }
 
-func (m *Matcher) MatchRight(n string, j int) []*Item {
+func (m *Matcher) MatchRight(n, j int) []*Item {
 	rk := rKey{
-		string: n,
-		int:    j,
+		n: n,
+		j: j,
 	}
 
 	items, ok := m.right[rk]

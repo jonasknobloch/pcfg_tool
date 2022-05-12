@@ -95,27 +95,27 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		}
 
 		for _, rule := range rules {
-			lexical, ok := rule.(*NonLexical)
+			nonLexical, ok := rule.(*NonLexical)
 
 			if !ok {
 				continue
 			}
 
-			if len(lexical.body) == 2 {
-				if lexical.body[0] == item.n {
-					for _, c := range p.matcher.MatchLeft(item.j, lexical.body[1]) {
+			if len(nonLexical.body) == 2 {
+				if nonLexical.body[0] == item.n {
+					for _, c := range p.matcher.MatchLeft(item.j, nonLexical.body[1]) {
 						p.Combine(item, c, rule)
 					}
 				}
 
-				if lexical.body[1] == item.n {
-					for _, c := range p.matcher.MatchRight(lexical.body[0], item.i) {
+				if nonLexical.body[1] == item.n {
+					for _, c := range p.matcher.MatchRight(nonLexical.body[0], item.i) {
 						p.Combine(c, item, rule)
 					}
 				}
 			}
 
-			if len(lexical.body) == 1 {
+			if len(nonLexical.body) == 1 {
 				p.Chain(item, rule)
 			}
 		}

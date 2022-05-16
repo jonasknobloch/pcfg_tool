@@ -2,10 +2,8 @@ package pcfg
 
 import (
 	"bufio"
-	"fmt"
 	"log"
 	"os"
-	"strings"
 )
 
 func Parse(rules, lexicon string, n string, file *os.File) {
@@ -25,17 +23,5 @@ func Parse(rules, lexicon string, n string, file *os.File) {
 
 	fs := bufio.NewScanner(file)
 
-	fs.Split(bufio.ScanLines)
-
-	for fs.Scan() {
-		tokens := strings.Split(fs.Text(), " ")
-
-		t, ok := p.Parse(tokens)
-
-		if !ok {
-			fmt.Printf("(NOPARSE %s)\n", strings.Join(p.tokens, " "))
-		} else {
-			fmt.Println(t)
-		}
-	}
+	p.ParseFile(fs)
 }

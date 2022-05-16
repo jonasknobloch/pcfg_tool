@@ -6,18 +6,25 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Grammar struct {
-	initial   string
-	weights   map[Rule]float64
+	initial string
+	weights struct {
+		value map[Rule]float64
+		mutex sync.RWMutex
+	}
 	rules     map[string]map[string]Rule
 	terminals map[string]struct{}
 }
 
 func NewGrammar() *Grammar {
 	return &Grammar{
-		weights:   make(map[Rule]float64),
+		weights: struct {
+			value map[Rule]float64
+			mutex sync.RWMutex
+		}{value: make(map[Rule]float64), mutex: sync.RWMutex{}},
 		rules:     make(map[string]map[string]Rule),
 		terminals: make(map[string]struct{}),
 	}
@@ -45,7 +52,7 @@ func (g *Grammar) AddRule(rule Rule, weight float64) {
 		g.terminals[body] = struct{}{}
 	}
 
-	g.weights[rule] += weight
+	g.weights.value[rule] += weight
 }
 
 func (g *Grammar) Normalize() {
@@ -53,11 +60,11 @@ func (g *Grammar) Normalize() {
 		sum := float64(0)
 
 		for _, rule := range bodies {
-			sum += g.weights[rule]
+			sum += g.weights.value[rule]
 		}
 
 		for _, rule := range bodies {
-			g.weights[rule] = g.weights[rule] / sum
+			g.weights.value[rule] = g.weights.value[rule] / sum
 		}
 	}
 }
@@ -67,7 +74,7 @@ func (g *Grammar) IsNormalized() bool {
 		sum := float64(0)
 
 		for _, rule := range bodies {
-			sum += g.weights[rule]
+			sum += g.weights.value[rule]
 		}
 
 		if sum-0.1 > 1 && sum+0.1 < 1 {
@@ -78,8 +85,15 @@ func (g *Grammar) IsNormalized() bool {
 	return true
 }
 
+func (g *Grammar) Weights() map[Rule]float64 {
+	return g.weights.value
+}
+
 func (g *Grammar) Weight(r Rule) float64 {
-	w, ok := g.weights[r]
+	g.weights.mutex.Lock()
+	defer g.weights.mutex.Unlock()
+
+	w, ok := g.weights.value[r]
 
 	if !ok {
 		panic("unknown rule")
@@ -89,7 +103,7 @@ func (g *Grammar) Weight(r Rule) float64 {
 }
 
 func (g *Grammar) Print() {
-	for r, w := range g.weights {
+	for r, w := range g.weights.value {
 		var sb strings.Builder
 
 		sb.WriteString(r.String())
@@ -181,7 +195,7 @@ func (g *Grammar) Export(grammar string) error {
 		words = bufio.NewWriter(file)
 	}
 
-	for r, w := range g.weights {
+	for r, w := range g.weights.value {
 		var sb strings.Builder
 
 		sb.WriteString(r.String())

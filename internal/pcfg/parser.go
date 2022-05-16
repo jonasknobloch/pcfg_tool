@@ -1,9 +1,17 @@
 package pcfg
 
 import (
+	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"github.com/jonasknobloch/jinn/pkg/tree"
+	"golang.org/x/sync/semaphore"
+	"log"
+	"runtime"
+	"strings"
+	"sync"
+	"time"
 )
 
 type Span struct {
@@ -26,11 +34,11 @@ func (i *Item) String() string {
 }
 
 type Parser struct {
-	tokens  []string
-	grammar Grammar
-	heap    Heap
-	matcher Matcher
-	rules   map[string][]Rule
+	grammar *Grammar
+	rules   struct {
+		value map[string][]Rule
+		mutex sync.RWMutex
+	}
 }
 
 func NewParser(g *Grammar) (*Parser, error) {
@@ -48,7 +56,7 @@ func NewParser(g *Grammar) (*Parser, error) {
 		rules[k] = append(rules[k], r)
 	}
 
-	for r := range g.weights {
+	for r := range g.Weights() {
 		switch v := r.(type) {
 		case *Lexical:
 			add(v.body, r)
@@ -64,17 +72,104 @@ func NewParser(g *Grammar) (*Parser, error) {
 	}
 
 	return &Parser{
-		grammar: *g,
-		rules:   rules,
+		grammar: g,
+		rules: struct {
+			value map[string][]Rule
+			mutex sync.RWMutex
+		}{value: rules, mutex: sync.RWMutex{}},
 	}, nil
 }
 
-func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
-	p.tokens = tokens
+func (ps *Parser) Rules(body string) []Rule {
+	ps.rules.mutex.Lock()
+	defer ps.rules.mutex.Unlock()
 
-	p.heap = *NewHeap()
-	p.matcher = *NewMatcher()
+	rules, ok := ps.rules.value[body]
 
+	if !ok {
+		rules = []Rule{}
+	}
+
+	return rules
+}
+
+func (ps *Parser) Parse(tokens []string) (*tree.Tree, bool) {
+	p := &parse{
+		tokens:  tokens,
+		heap:    NewHeap(),
+		matcher: NewMatcher(),
+		parser:  ps,
+	}
+
+	return p.Parse()
+}
+
+func (ps *Parser) ParseFile(fs *bufio.Scanner) {
+	ctx := context.TODO()
+	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+
+	var wg sync.WaitGroup
+
+	ph := NewPrintHeap()
+
+	count := 0
+
+	for fs.Scan() {
+		text := fs.Text()
+
+		if err := sem.Acquire(ctx, 1); err != nil {
+			log.Fatalf("Failed to acquire semaphore: %v", err)
+		}
+
+		wg.Add(1)
+
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+
+		// 32 GB * 0.8 -> 256e8
+		// 16 GB * 0.8 -> 128e8
+		for m.Alloc > 256e8 {
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		go func(count int) {
+			defer func() {
+				defer sem.Release(1)
+				defer wg.Done()
+				defer ph.Print()
+			}()
+
+			tokens := strings.Split(text, " ")
+
+			t, ok := ps.Parse(tokens)
+
+			if !ok {
+				ph.Push(&PrintJob{
+					line:  fmt.Sprintf("(NOPARSE %s)", strings.Join(tokens, " ")),
+					count: count,
+				})
+			} else {
+				ph.Push(&PrintJob{
+					line:  t.String(),
+					count: count,
+				})
+			}
+		}(count)
+
+		count++
+	}
+
+	wg.Wait()
+}
+
+type parse struct {
+	tokens  []string
+	heap    *Heap
+	matcher *Matcher
+	parser  *Parser
+}
+
+func (p *parse) Parse() (*tree.Tree, bool) {
 	p.Initialize()
 
 	for !p.heap.Empty() {
@@ -84,17 +179,11 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 			continue
 		}
 
-		if item.n == p.grammar.initial && item.i == 0 && item.j == len(p.tokens) {
-			return p.Tree(item, tokens), true
+		if item.n == p.parser.grammar.initial && item.i == 0 && item.j == len(p.tokens) {
+			return p.Tree(item, p.tokens), true
 		}
 
-		rules, ok := p.rules[item.n]
-
-		if !ok {
-			continue
-		}
-
-		for _, rule := range rules {
+		for _, rule := range p.parser.Rules(item.n) {
 			nonLexical, ok := rule.(*NonLexical)
 
 			if !ok {
@@ -124,9 +213,9 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 	return nil, false
 }
 
-func (p *Parser) Initialize() {
+func (p *parse) Initialize() {
 	for i, t := range p.tokens {
-		for _, r := range p.Rules(t) {
+		for _, r := range p.parser.Rules(t) {
 			if _, ok := r.(*Lexical); !ok {
 				continue
 			}
@@ -137,7 +226,7 @@ func (p *Parser) Initialize() {
 					j: i + 1,
 					n: r.Head(),
 				},
-				weight: p.grammar.Weight(r),
+				weight: p.parser.grammar.Weight(r),
 			}
 
 			p.heap.Push(lexical)
@@ -145,45 +234,35 @@ func (p *Parser) Initialize() {
 	}
 }
 
-func (p *Parser) Rules(body string) []Rule {
-	rules, ok := p.rules[body]
-
-	if !ok {
-		rules = []Rule{}
-	}
-
-	return rules
-}
-
-func (p *Parser) Combine(c1, c2 *Item, r Rule) {
+func (p *parse) Combine(c1, c2 *Item, r Rule) {
 	i := &Item{
 		Span: Span{
 			i: c1.i,
 			j: c2.j,
 			n: r.Head(),
 		},
-		weight:     c1.Weight() * c2.Weight() * p.grammar.Weight(r),
+		weight:     c1.Weight() * c2.Weight() * p.parser.grammar.Weight(r),
 		backtracks: [2]*Item{c1, c2},
 	}
 
 	p.heap.Push(i)
 }
 
-func (p *Parser) Chain(c *Item, r Rule) {
+func (p *parse) Chain(c *Item, r Rule) {
 	i := &Item{
 		Span: Span{
 			i: c.i,
 			j: c.j,
 			n: r.Head(),
 		},
-		weight:     c.Weight() * p.grammar.Weight(r),
+		weight:     c.Weight() * p.parser.grammar.Weight(r),
 		backtracks: [2]*Item{c, nil},
 	}
 
 	p.heap.Push(i)
 }
 
-func (p *Parser) Tree(root *Item, tokens []string) *tree.Tree {
+func (p *parse) Tree(root *Item, tokens []string) *tree.Tree {
 	var backtrack func(item *Item) *tree.Tree
 	backtrack = func(item *Item) *tree.Tree {
 		t := &tree.Tree{

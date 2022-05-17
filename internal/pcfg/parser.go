@@ -31,6 +31,8 @@ func (i *Item) String() string {
 	return fmt.Sprintf("(%d,%d,%d)#%.2f", i.i, i.n, i.j, i.Weight())
 }
 
+var ErrNoParse = errors.New("no parse")
+
 type Parser struct {
 	tokens  []string
 	grammar Grammar
@@ -97,16 +99,14 @@ func NewParser(g *Grammar) (*Parser, error) {
 	return p, nil
 }
 
-func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
+func (p *Parser) Parse(tokens []string) (*tree.Tree, error) {
 	p.tokens = tokens
 
 	p.heap = *NewHeap()
 	p.matcher = *NewMatcher()
 
 	if err := p.Initialize(); err != nil {
-		// TODO handle
-
-		return nil, false
+		return nil, err
 	}
 
 	for !p.heap.Empty() {
@@ -117,7 +117,7 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		}
 
 		if item.n == p.initial && item.i == 0 && item.j == len(p.tokens) {
-			return p.Tree(item, tokens), true
+			return p.Tree(item, tokens)
 		}
 
 		rules, ok := p.rules[item.n]
@@ -147,7 +147,7 @@ func (p *Parser) Parse(tokens []string) (*tree.Tree, bool) {
 		}
 	}
 
-	return nil, false
+	return nil, ErrNoParse
 }
 
 func (p *Parser) Initialize() error {
@@ -223,30 +223,40 @@ func (p *Parser) Chain(c *Item, ri *NonLexicalInt) {
 	p.heap.Push(i)
 }
 
-func (p *Parser) Tree(root *Item, tokens []string) *tree.Tree {
-	var backtrack func(item *Item) *tree.Tree
-	backtrack = func(item *Item) *tree.Tree {
+func (p *Parser) Tree(root *Item, tokens []string) (*tree.Tree, error) {
+	var backtrack func(item *Item) (*tree.Tree, error)
+	backtrack = func(item *Item) (*tree.Tree, error) {
 		t := &tree.Tree{}
 
 		if label, ok := p.symbols.Itoa(item.n); !ok {
-			// TODO handle
+			return nil, errors.New("unknown symbol")
 		} else {
 			t.Label = label
 		}
 
 		li, ri := item.backtracks[0], item.backtracks[1]
 
+		var errL, errR error
+
 		if li != nil && ri != nil {
-			t.Children = []*tree.Tree{
-				backtrack(li),
-				backtrack(ri),
-			}
+			t.Children = make([]*tree.Tree, 2)
+
+			t.Children[0], errL = backtrack(li)
+			t.Children[1], errR = backtrack(ri)
 		}
 
 		if li != nil && ri == nil {
-			t.Children = []*tree.Tree{
-				backtrack(li),
-			}
+			t.Children = make([]*tree.Tree, 1)
+
+			t.Children[0], errL = backtrack(li)
+		}
+
+		if errL != nil {
+			return nil, errL
+		}
+
+		if errR != nil {
+			return nil, errR
 		}
 
 		if li == nil && ri == nil {
@@ -257,7 +267,7 @@ func (p *Parser) Tree(root *Item, tokens []string) *tree.Tree {
 			}
 		}
 
-		return t
+		return t, nil
 	}
 
 	return backtrack(root)

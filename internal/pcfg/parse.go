@@ -28,14 +28,17 @@ func Parse(rules, lexicon string, n string, file *os.File) {
 	fs.Split(bufio.ScanLines)
 
 	for fs.Scan() {
-		tokens := strings.Split(fs.Text(), " ")
+		text := fs.Text()
+		tokens := strings.Split(text, " ")
 
-		t, ok := p.Parse(tokens)
+		t, err := p.Parse(tokens)
 
-		if !ok {
-			fmt.Printf("(NOPARSE %s)\n", strings.Join(p.tokens, " "))
-		} else {
+		if err == nil {
 			fmt.Println(t)
+		} else if err == ErrNoParse {
+			fmt.Printf("(NOPARSE %s)\n", text)
+		} else {
+			log.Fatal(err)
 		}
 	}
 }

@@ -22,6 +22,7 @@ type Span struct {
 type Item struct {
 	Span
 	weight     float64
+	pruned     bool
 	backtracks [2]*Item
 }
 
@@ -128,10 +129,13 @@ func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 
 		// 32 GB * 0.8 -> 256e8
 		// 16 GB * 0.8 -> 128e8
-		for m.Alloc > 256e8 {
+		for m.Alloc > 128e8 {
 			time.Sleep(100 * time.Millisecond)
 			runtime.ReadMemStats(&m)
 		}
+
+		// STDIN=testsentences10 ./pcfg_tool parse material/large/grammar.rules   869.13s user 19.61s system 421% cpu 3:30.78 total
+		// STDIN=testsentences10 ./pcfg_tool parse material/large/grammar.rules   954.32s user 16.91s system 444% cpu 3:38.33 total
 
 		go func(count int) {
 			defer func() {
@@ -174,7 +178,11 @@ func (p *parse) Parse() (*tree.Tree, bool) {
 	p.Initialize()
 
 	for !p.heap.Empty() {
-		item, _ := p.heap.Pop()
+		item, ok := p.heap.Pop()
+
+		if !ok {
+			continue // not empty if pruned on top
+		}
 
 		if ok := p.matcher.Add(item); !ok {
 			continue
@@ -208,6 +216,8 @@ func (p *parse) Parse() (*tree.Tree, bool) {
 			if len(nonLexical.body) == 1 {
 				p.Chain(item, rule)
 			}
+
+			p.heap.Prune(1e-30)
 		}
 	}
 

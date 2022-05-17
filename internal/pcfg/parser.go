@@ -130,6 +130,7 @@ func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 		// 16 GB * 0.8 -> 128e8
 		for m.Alloc > 256e8 {
 			time.Sleep(100 * time.Millisecond)
+			runtime.ReadMemStats(&m)
 		}
 
 		go func(count int) {

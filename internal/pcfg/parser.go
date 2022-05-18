@@ -155,7 +155,7 @@ func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
 
 func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 	ctx := context.TODO()
-	sem := semaphore.NewWeighted(int64(runtime.NumCPU()))
+	sem := semaphore.NewWeighted(Config.WorkerPoolSize)
 
 	var wg sync.WaitGroup
 
@@ -175,10 +175,8 @@ func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 
-		// 32 GB * 0.8 -> 256e8
-		// 16 GB * 0.8 -> 128e8
-		for m.Alloc > 256e8 {
-			time.Sleep(100 * time.Millisecond)
+		for m.Alloc > Config.AllocThreshold {
+			time.Sleep(Config.ReadMemStatsRate)
 			runtime.ReadMemStats(&m)
 		}
 

@@ -1,4 +1,4 @@
-package pcfg
+package parser
 
 type lKey struct {
 	i, n int

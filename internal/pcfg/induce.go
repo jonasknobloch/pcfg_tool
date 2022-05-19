@@ -5,16 +5,17 @@ import (
 	"github.com/jonasknobloch/jinn/pkg/tree"
 	"log"
 	"os"
+	"pcfg_tool/internal/grammar"
 )
 
-func Induce(file *os.File) *Grammar {
+func Induce(file *os.File) *grammar.Grammar {
 	dec := tree.NewDecoder()
 
 	fs := bufio.NewScanner(file)
 
 	fs.Split(bufio.ScanLines)
 
-	g := NewGrammar()
+	g := grammar.NewGrammar()
 
 	var n string
 
@@ -40,13 +41,13 @@ func Induce(file *os.File) *Grammar {
 	return g
 }
 
-func EvaluateTree(t *tree.Tree, g *Grammar) {
+func EvaluateTree(t *tree.Tree, g *grammar.Grammar) {
 	t.Walk(func(t *tree.Tree) {
 		if len(t.Children) == 0 {
 			return
 		}
 
-		r, err := NewRule(t)
+		r, err := grammar.NewRule(t)
 
 		if err != nil {
 			return

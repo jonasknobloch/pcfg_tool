@@ -1,9 +1,10 @@
-package pcfg
+package grammar
 
 import (
 	"bufio"
 	"fmt"
 	"os"
+	"pcfg_tool/internal/utility"
 	"strconv"
 	"strings"
 	"sync"
@@ -30,13 +31,17 @@ func NewGrammar() *Grammar {
 	}
 }
 
+func (g *Grammar) Initial() string {
+	return g.initial
+}
+
 func (g *Grammar) SetInitial(n string) {
 	g.initial = n
 }
 
 func (g *Grammar) AddRule(rule Rule, weight float64) {
-	head := rule.Head()
-	body := rule.Body()
+	head := rule.KeyHead()
+	body := rule.KeyBody()
 
 	if _, ok := g.rules[head]; !ok {
 		g.rules[head] = make(map[string]Rule, 0)
@@ -107,7 +112,7 @@ func (g *Grammar) Print() {
 		var sb strings.Builder
 
 		sb.WriteString(r.String())
-		sb.WriteString(fmt.Sprintf(" %s", FormatWeight(w)))
+		sb.WriteString(fmt.Sprintf(" %s", utility.FormatWeight(w)))
 
 		fmt.Println(sb.String())
 	}
@@ -139,8 +144,8 @@ func (g *Grammar) Import(rules, lexicon string) error {
 		t := strings.Split(rS.Text(), " ")
 
 		r := NonLexical{
-			head: t[0],
-			body: t[2 : len(t)-1],
+			Head: t[0],
+			Body: t[2 : len(t)-1],
 		}
 
 		w, err := strconv.ParseFloat(t[len(t)-1], 64)
@@ -156,8 +161,8 @@ func (g *Grammar) Import(rules, lexicon string) error {
 		t := strings.Split(lS.Text(), " ")
 
 		r := Lexical{
-			head: t[0],
-			body: t[1],
+			Head: t[0],
+			Body: t[1],
 		}
 
 		w, err := strconv.ParseFloat(t[2], 64)
@@ -199,7 +204,7 @@ func (g *Grammar) Export(grammar string) error {
 		var sb strings.Builder
 
 		sb.WriteString(r.String())
-		sb.WriteString(fmt.Sprintf(" %s\n", FormatWeight(w)))
+		sb.WriteString(fmt.Sprintf(" %s\n", utility.FormatWeight(w)))
 
 		var err error
 

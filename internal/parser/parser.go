@@ -1,4 +1,4 @@
-package pcfg
+package parser
 
 import (
 	"bufio"
@@ -8,44 +8,22 @@ import (
 	"github.com/jonasknobloch/jinn/pkg/tree"
 	"golang.org/x/sync/semaphore"
 	"log"
+	"pcfg_tool/internal/config"
+	"pcfg_tool/internal/grammar"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 )
 
-type NonLexicalInt struct {
-	head int
-	body []int
-	rule *NonLexical
-}
-
-type Span struct {
-	i, j, n int
-}
-
-type Item struct {
-	Span
-	weight     float64
-	backtracks [2]*Item
-}
-
-func (i *Item) Weight() float64 {
-	return i.weight
-}
-
-func (i *Item) String() string {
-	return fmt.Sprintf("(%d,%d,%d)#%.2f", i.i, i.n, i.j, i.Weight())
-}
-
 var ErrNoParse = errors.New("no parse")
 
 type Parser struct {
-	grammar *Grammar
+	grammar *grammar.Grammar
 	symbols *SymbolTable
 	initial int
 	lexicon struct {
-		value map[string][]*Lexical
+		value map[string][]*grammar.Lexical
 		mutex sync.RWMutex
 	}
 	rules struct {
@@ -54,8 +32,8 @@ type Parser struct {
 	}
 }
 
-func NewParser(g *Grammar) (*Parser, error) {
-	if g.initial == "" {
+func NewParser(g *grammar.Grammar) (*Parser, error) {
+	if g.Initial() == "" {
 		return nil, errors.New("grammar initial not set")
 	}
 
@@ -65,9 +43,9 @@ func NewParser(g *Grammar) (*Parser, error) {
 	}
 
 	p.lexicon = struct {
-		value map[string][]*Lexical
+		value map[string][]*grammar.Lexical
 		mutex sync.RWMutex
-	}{value: make(map[string][]*Lexical), mutex: sync.RWMutex{}}
+	}{value: make(map[string][]*grammar.Lexical), mutex: sync.RWMutex{}}
 
 	p.rules = struct {
 		value map[int][]*NonLexicalInt
@@ -82,7 +60,7 @@ func NewParser(g *Grammar) (*Parser, error) {
 		p.rules.value[k] = append(p.rules.value[k], ir)
 	}
 
-	if initial, err := p.symbols.Atoi(g.initial); err != nil {
+	if initial, err := p.symbols.Atoi(g.Initial()); err != nil {
 		return nil, err
 	} else {
 		p.initial = initial
@@ -90,23 +68,23 @@ func NewParser(g *Grammar) (*Parser, error) {
 
 	for r := range g.Weights() {
 		switch v := r.(type) {
-		case *Lexical:
-			if _, ok := p.lexicon.value[v.body]; !ok {
-				p.lexicon.value[v.body] = make([]*Lexical, 0)
+		case *grammar.Lexical:
+			if _, ok := p.lexicon.value[v.KeyBody()]; !ok {
+				p.lexicon.value[v.KeyBody()] = make([]*grammar.Lexical, 0)
 			}
 
-			p.lexicon.value[v.body] = append(p.lexicon.value[v.body], v)
-		case *NonLexical:
-			ri, err := NonLexicalToNonLexicalInt(v, p.symbols)
+			p.lexicon.value[v.KeyBody()] = append(p.lexicon.value[v.KeyBody()], v)
+		case *grammar.NonLexical:
+			ri, err := NewNonLexicalInt(v, p.symbols)
 
 			if err != nil {
 				return nil, err
 			}
 
-			add(ri.body[0], ri)
+			add(ri.Body[0], ri)
 
-			if ri.body[len(ri.body)-1] != ri.body[0] {
-				add(ri.body[len(ri.body)-1], ri)
+			if ri.Body[len(ri.Body)-1] != ri.Body[0] {
+				add(ri.Body[len(ri.Body)-1], ri)
 			}
 		default:
 			panic("unknown rule type")
@@ -116,14 +94,14 @@ func NewParser(g *Grammar) (*Parser, error) {
 	return p, nil
 }
 
-func (ps *Parser) Lexicon(body string) []*Lexical {
+func (ps *Parser) Lexicon(body string) []*grammar.Lexical {
 	ps.lexicon.mutex.Lock()
 	defer ps.lexicon.mutex.Unlock()
 
 	lexicon, ok := ps.lexicon.value[body]
 
 	if !ok {
-		lexicon = []*Lexical{}
+		lexicon = []*grammar.Lexical{}
 	}
 
 	return lexicon
@@ -155,7 +133,7 @@ func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
 
 func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 	ctx := context.TODO()
-	sem := semaphore.NewWeighted(Config.WorkerPoolSize)
+	sem := semaphore.NewWeighted(config.Config.WorkerPoolSize)
 
 	var wg sync.WaitGroup
 
@@ -175,8 +153,8 @@ func (ps *Parser) ParseFile(fs *bufio.Scanner) {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 
-		for m.Alloc > Config.AllocThreshold {
-			time.Sleep(Config.ReadMemStatsRate)
+		for m.Alloc > config.Config.AllocThreshold {
+			time.Sleep(config.Config.ReadMemStatsRate)
 			runtime.ReadMemStats(&m)
 		}
 
@@ -236,21 +214,21 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		}
 
 		for _, rule := range p.parser.Rules(item.n) {
-			if len(rule.body) == 2 {
-				if rule.body[0] == item.n {
-					for _, c := range p.matcher.MatchLeft(item.j, rule.body[1]) {
+			if len(rule.Body) == 2 {
+				if rule.Body[0] == item.n {
+					for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
 						p.Combine(item, c, rule)
 					}
 				}
 
-				if rule.body[1] == item.n {
-					for _, c := range p.matcher.MatchRight(rule.body[0], item.i) {
+				if rule.Body[1] == item.n {
+					for _, c := range p.matcher.MatchRight(rule.Body[0], item.i) {
 						p.Combine(c, item, rule)
 					}
 				}
 			}
 
-			if len(rule.body) == 1 {
+			if len(rule.Body) == 1 {
 				p.Chain(item, rule)
 			}
 		}
@@ -262,7 +240,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 func (p *parse) Initialize() error {
 	for i, t := range p.tokens {
 		for _, r := range p.parser.Lexicon(t) {
-			n, err := p.parser.symbols.Atoi(r.head)
+			n, err := p.parser.symbols.Atoi(r.KeyHead())
 
 			if err != nil {
 				return err
@@ -289,9 +267,9 @@ func (p *parse) Combine(c1, c2 *Item, ri *NonLexicalInt) {
 		Span: Span{
 			i: c1.i,
 			j: c2.j,
-			n: ri.head,
+			n: ri.Head,
 		},
-		weight:     c1.Weight() * c2.Weight() * p.parser.grammar.Weight(ri.rule),
+		weight:     c1.Weight() * c2.Weight() * p.parser.grammar.Weight(ri.Rule),
 		backtracks: [2]*Item{c1, c2},
 	}
 
@@ -303,9 +281,9 @@ func (p *parse) Chain(c *Item, ri *NonLexicalInt) {
 		Span: Span{
 			i: c.i,
 			j: c.j,
-			n: ri.head,
+			n: ri.Head,
 		},
-		weight:     c.Weight() * p.parser.grammar.Weight(ri.rule),
+		weight:     c.Weight() * p.parser.grammar.Weight(ri.Rule),
 		backtracks: [2]*Item{c, nil},
 	}
 

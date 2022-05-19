@@ -1,4 +1,4 @@
-package pcfg
+package config
 
 import (
 	"os"

@@ -4,10 +4,12 @@ import (
 	"bufio"
 	"log"
 	"os"
+	"pcfg_tool/internal/grammar"
+	"pcfg_tool/internal/parser"
 )
 
 func Parse(rules, lexicon string, n string, file *os.File) {
-	g := NewGrammar()
+	g := grammar.NewGrammar()
 
 	g.SetInitial(n)
 
@@ -15,7 +17,7 @@ func Parse(rules, lexicon string, n string, file *os.File) {
 		log.Fatal(err)
 	}
 
-	p, err := NewParser(g)
+	p, err := parser.NewParser(g)
 
 	if err != nil {
 		log.Fatal(err)

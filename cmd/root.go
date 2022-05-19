@@ -8,7 +8,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "pcfg_tool",
-	Short: "A brief description of your command",
+	Short: "Tools for PCFG-based parsing of natural language sentences",
 }
 
 func Execute() {

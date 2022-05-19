@@ -7,8 +7,11 @@ import (
 
 var parseCmd = &cobra.Command{
 	Use:   "parse",
-	Short: "A brief description of your command",
-	Args:  cobra.ExactArgs(2),
+	Short: "Parse natural language sentences",
+	Long: "Reads a sequence of natural language sentences from standard input and outputs the associated best parse " +
+		"trees in PTB format or (NOPARSE <sentence>) on standard output. RULES and LEXICON are the file names of the " +
+		"PCFG.",
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		stdin := OpenStdin()
 		defer stdin.Close()

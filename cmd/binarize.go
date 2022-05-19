@@ -9,7 +9,9 @@ import (
 var binarizeCmd = &cobra.Command{
 	Use:     "binarize",
 	Aliases: []string{"binarise"},
-	Short:   "A brief description of your command",
+	Short:   "Binarize constituent trees",
+	Long: "Reads a sequence of constituent trees from standard input and outputs the corresponding binarized " +
+		"constituent trees on standard output.",
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Exit(22)
 	},

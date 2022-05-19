@@ -8,7 +8,10 @@ import (
 
 var outsideCmd = &cobra.Command{
 	Use:   "outside",
-	Short: "A brief description of your command",
+	Short: "Calculate viterbi outside weights",
+	Long: "Calculates Viterbi outside weights for each non-terminal of the grammar and prints them on the standard " +
+		"output. If the optional argument GRAMMAR is given, then the outside weights are stored in the file " +
+		"GRAMMAR.outside.",
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Exit(22)
 	},

@@ -8,7 +8,9 @@ import (
 
 var smoothCmd = &cobra.Command{
 	Use:   "smooth",
-	Short: "A brief description of your command",
+	Short: "Smooth constituent trees",
+	Long: "Reads a sequence of constituent trees from standard input and outputs the trees obtained by smoothing on " +
+		"standard output.",
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Exit(22)
 	},

@@ -8,7 +8,9 @@ import (
 
 var unkCmd = &cobra.Command{
 	Use:   "unk",
-	Short: "A brief description of your command",
+	Short: "Unk constituent trees",
+	Long: "Reads a sequence of constituent trees from standard input and outputs the trees obtained by trivial " +
+		"unking on standard output.",
 	Run: func(cmd *cobra.Command, args []string) {
 		os.Exit(22)
 	},

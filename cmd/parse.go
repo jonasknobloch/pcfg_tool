@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"pcfg_tool/internal/pcfg"
+	"pcfg_tool/internal/tool"
 )
 
 var parseCmd = &cobra.Command{
@@ -15,7 +15,7 @@ var parseCmd = &cobra.Command{
 
 		n := cmd.Flag("initial-nonterminal").Value.String()
 
-		pcfg.Parse(args[0], args[1], n, stdin)
+		tool.Parse(args[0], args[1], n, stdin)
 	},
 }
 

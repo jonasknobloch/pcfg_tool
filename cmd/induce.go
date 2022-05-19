@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"log"
-	"pcfg_tool/internal/pcfg"
+	"pcfg_tool/internal/tool"
 )
 
 var induceCmd = &cobra.Command{
@@ -14,7 +14,7 @@ var induceCmd = &cobra.Command{
 		stdin := OpenStdin()
 		defer stdin.Close()
 
-		g := pcfg.Induce(stdin)
+		g := tool.Induce(stdin)
 
 		if len(args) == 0 {
 			g.Print()

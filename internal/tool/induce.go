@@ -36,7 +36,10 @@ func Induce(file *os.File) *grammar.Grammar {
 	}
 
 	g.Normalize()
-	g.SetInitial(n)
+
+	if err := g.SetInitial(n); err != nil {
+		log.Fatal(err)
+	}
 
 	return g
 }
@@ -47,12 +50,14 @@ func EvaluateTree(t *tree.Tree, g *grammar.Grammar) {
 			return
 		}
 
-		r, err := grammar.NewRule(t)
+		r, err := grammar.NewRule(t, g.Symbols)
 
 		if err != nil {
 			return
 		}
 
-		g.AddRule(r, 1)
+		if err := g.AddRule(r); err != nil {
+			panic(err) // TODO handle
+		}
 	})
 }

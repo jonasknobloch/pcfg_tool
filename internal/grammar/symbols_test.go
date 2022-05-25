@@ -1,4 +1,4 @@
-package parser
+package grammar
 
 import (
 	"fmt"
@@ -17,10 +17,10 @@ func TestSymbolTable(t *testing.T) {
 			t.Errorf("unexptected error: %v", err)
 		}
 
-		s, ok := st.Itoa(i)
+		s, err := st.Itoa(i)
 
-		if !ok {
-			t.Error("could not convert back to string")
+		if err != nil {
+			t.Errorf("unexptected error: %v", err)
 		}
 
 		if s != c {

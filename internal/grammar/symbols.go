@@ -1,6 +1,7 @@
-package parser
+package grammar
 
 import (
+	"errors"
 	"hash/fnv"
 )
 
@@ -8,6 +9,8 @@ type SymbolTable struct {
 	atoi map[string]int
 	itoa map[int]string
 }
+
+var ErrUnknownSymbol = errors.New("unknown symbol")
 
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
@@ -35,8 +38,12 @@ func (st *SymbolTable) Atoi(s string) (int, error) {
 	return i, nil
 }
 
-func (st *SymbolTable) Itoa(i int) (string, bool) {
+func (st *SymbolTable) Itoa(i int) (string, error) {
 	a, ok := st.itoa[i]
 
-	return a, ok
+	if !ok {
+		return "", ErrUnknownSymbol
+	}
+
+	return a, nil
 }

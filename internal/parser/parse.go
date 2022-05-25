@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"errors"
 	"github.com/jonasknobloch/jinn/pkg/tree"
+	"pcfg_tool/internal/grammar"
 )
 
 type parse struct {
@@ -24,11 +24,11 @@ func (p *parse) Parse() (*tree.Tree, error) {
 			continue
 		}
 
-		if item.n == p.parser.initial && item.i == 0 && item.j == len(p.tokens) {
+		if item.n == p.parser.grammar.Initial() && item.i == 0 && item.j == len(p.tokens) {
 			return p.Tree(item, p.tokens)
 		}
 
-		for _, rule := range p.parser.Rules(item.n) {
+		for _, rule := range p.parser.grammar.Rules(item.n) {
 			if len(rule.Body) == 2 {
 				if rule.Body[0] == item.n {
 					for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
@@ -54,20 +54,14 @@ func (p *parse) Parse() (*tree.Tree, error) {
 
 func (p *parse) Initialize() error {
 	for i, t := range p.tokens {
-		for _, r := range p.parser.Lexicon(t) {
-			n, err := p.parser.symbols.Atoi(r.KeyHead())
-
-			if err != nil {
-				return err
-			}
-
+		for _, r := range p.parser.grammar.Lexicon(t) {
 			lexical := &Item{
 				Span: Span{
 					i: i,
 					j: i + 1,
-					n: n,
+					n: r.Head,
 				},
-				weight: p.parser.grammar.Weight(r),
+				weight: r.Weight(),
 			}
 
 			p.heap.Push(lexical)
@@ -77,28 +71,28 @@ func (p *parse) Initialize() error {
 	return nil
 }
 
-func (p *parse) Combine(c1, c2 *Item, ri *NonLexicalInt) {
+func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {
 	i := &Item{
 		Span: Span{
 			i: c1.i,
 			j: c2.j,
 			n: ri.Head,
 		},
-		weight:     c1.Weight() * c2.Weight() * p.parser.grammar.Weight(ri.Rule),
+		weight:     c1.Weight() * c2.Weight() * ri.Weight(),
 		backtracks: [2]*Item{c1, c2},
 	}
 
 	p.heap.Push(i)
 }
 
-func (p *parse) Chain(c *Item, ri *NonLexicalInt) {
+func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
 	i := &Item{
 		Span: Span{
 			i: c.i,
 			j: c.j,
 			n: ri.Head,
 		},
-		weight:     c.Weight() * p.parser.grammar.Weight(ri.Rule),
+		weight:     c.Weight() * ri.Weight(),
 		backtracks: [2]*Item{c, nil},
 	}
 
@@ -110,8 +104,8 @@ func (p *parse) Tree(root *Item, tokens []string) (*tree.Tree, error) {
 	backtrack = func(item *Item) (*tree.Tree, error) {
 		t := &tree.Tree{}
 
-		if label, ok := p.parser.symbols.Itoa(item.n); !ok {
-			return nil, errors.New("unknown symbol")
+		if label, err := p.parser.grammar.Symbols.Itoa(item.n); err != nil {
+			return nil, err
 		} else {
 			t.Label = label
 		}

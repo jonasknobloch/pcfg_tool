@@ -16,13 +16,13 @@ type Grammar struct {
 	rules   struct {
 		left  map[int][]*NonLexical
 		right map[int][]*NonLexical
-		key   map[uint64]*NonLexical
+		key   map[string]*NonLexical
 		mutex sync.RWMutex
 	}
 	lexicon struct {
 		left  map[int][]*Lexical
 		right map[string][]*Lexical
-		key   map[uint64]*Lexical
+		key   map[string]*Lexical
 		mutex sync.RWMutex
 	}
 	words   map[string]struct{}
@@ -36,23 +36,23 @@ func NewGrammar() *Grammar {
 		rules: struct {
 			left  map[int][]*NonLexical
 			right map[int][]*NonLexical
-			key   map[uint64]*NonLexical
+			key   map[string]*NonLexical
 			mutex sync.RWMutex
 		}{
 			left:  make(map[int][]*NonLexical),
 			right: make(map[int][]*NonLexical),
-			key:   make(map[uint64]*NonLexical),
+			key:   make(map[string]*NonLexical),
 			mutex: sync.RWMutex{},
 		},
 		lexicon: struct {
 			left  map[int][]*Lexical
 			right map[string][]*Lexical
-			key   map[uint64]*Lexical
+			key   map[string]*Lexical
 			mutex sync.RWMutex
 		}{
 			left:  make(map[int][]*Lexical),
 			right: make(map[string][]*Lexical),
-			key:   make(map[uint64]*Lexical),
+			key:   make(map[string]*Lexical),
 			mutex: sync.RWMutex{},
 		},
 		words:   make(map[string]struct{}),
@@ -72,14 +72,14 @@ func (g *Grammar) SetInitial(n string) error {
 	return err
 }
 
-func (g *Grammar) AddRule(rule Rule) error {
+func (g *Grammar) AddRule(rule Rule, key string) error {
 	var err error
 
 	switch v := rule.(type) {
 	case *NonLexical:
-		err = g.AddNonLexical(v)
+		err = g.AddNonLexical(v, key)
 	case *Lexical:
-		err = g.AddLexical(v)
+		err = g.AddLexical(v, key)
 	default:
 		err = ErrUnknownRuleType
 	}
@@ -87,9 +87,9 @@ func (g *Grammar) AddRule(rule Rule) error {
 	return err
 }
 
-func (g *Grammar) AddNonLexical(nonLexical *NonLexical) error {
-	if nl, ok := g.rules.key[nonLexical.key]; !ok {
-		g.rules.key[nonLexical.key] = nonLexical
+func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) error {
+	if nl, ok := g.rules.key[key]; !ok {
+		g.rules.key[key] = nonLexical
 	} else {
 		nl.weight += nonLexical.weight
 		return nil
@@ -112,9 +112,9 @@ func (g *Grammar) AddNonLexical(nonLexical *NonLexical) error {
 	return nil
 }
 
-func (g *Grammar) AddLexical(lexical *Lexical) error {
-	if l, ok := g.lexicon.key[lexical.key]; !ok {
-		g.lexicon.key[lexical.key] = lexical
+func (g *Grammar) AddLexical(lexical *Lexical, key string) error {
+	if l, ok := g.lexicon.key[key]; !ok {
+		g.lexicon.key[key] = lexical
 	} else {
 		l.weight += lexical.weight
 		return nil
@@ -281,7 +281,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for rS.Scan() {
 		t := strings.Split(rS.Text(), " ")
 
-		r, err := NewNonLexical(t[0], t[2:len(t)-1], g.Symbols)
+		r, k, err := NewNonLexical(t[0], t[2:len(t)-1], g.Symbols)
 
 		if err != nil {
 			return err
@@ -295,7 +295,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 
 		r.weight = w
 
-		if err := g.AddRule(r); err != nil {
+		if err := g.AddRule(r, k); err != nil {
 			return err
 		}
 	}
@@ -303,7 +303,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for lS.Scan() {
 		t := strings.Split(lS.Text(), " ")
 
-		r, err := NewLexical(t[0], t[1], g.Symbols)
+		r, k, err := NewLexical(t[0], t[1], g.Symbols)
 
 		if err != nil {
 			return err
@@ -317,7 +317,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 
 		r.weight = w
 
-		if err := g.AddRule(r); err != nil {
+		if err := g.AddRule(r, k); err != nil {
 			return err
 		}
 	}

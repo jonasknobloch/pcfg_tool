@@ -6,14 +6,13 @@ import (
 )
 
 type Rule interface {
-	Key() uint64
 	Weight() float64
 	String(st *SymbolTable) (string, error)
 }
 
-func NewRule(t *tree.Tree, st *SymbolTable) (Rule, error) {
+func NewRule(t *tree.Tree, st *SymbolTable) (Rule, string, error) {
 	if len(t.Children) == 0 {
-		return nil, errors.New("tree has no children")
+		return nil, "", errors.New("tree has no children")
 	}
 
 	if len(t.Children[0].Children) == 0 {

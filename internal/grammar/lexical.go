@@ -2,7 +2,6 @@ package grammar
 
 import (
 	"fmt"
-	"hash/fnv"
 	"pcfg_tool/internal/utility"
 	"strings"
 )
@@ -10,34 +9,24 @@ import (
 type Lexical struct {
 	Head   int
 	Body   string
-	key    uint64
 	weight float64
 }
 
-func NewLexical(head, body string, symbols *SymbolTable) (*Lexical, error) {
+func NewLexical(head, body string, symbols *SymbolTable) (*Lexical, string, error) {
 	l := &Lexical{
 		weight: 1,
 		Body:   body,
 	}
 
 	if h, err := symbols.Atoi(head); err != nil {
-		return nil, err
+		return nil, "", err
 	} else {
 		l.Head = h
 	}
 
-	h := fnv.New64()
+	key := head + " " + body
 
-	_, _ = h.Write([]byte(head))
-	_, _ = h.Write([]byte(body))
-
-	l.key = h.Sum64()
-
-	return l, nil
-}
-
-func (l *Lexical) Key() uint64 {
-	return l.key
+	return l, key, nil
 }
 
 func (l *Lexical) Weight() float64 {

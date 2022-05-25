@@ -3,7 +3,6 @@ package grammar
 import (
 	"errors"
 	"fmt"
-	"hash/fnv"
 	"pcfg_tool/internal/utility"
 	"strings"
 )
@@ -11,13 +10,12 @@ import (
 type NonLexical struct {
 	Head   int
 	Body   []int
-	key    uint64
 	weight float64
 }
 
-func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexical, error) {
+func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexical, string, error) {
 	if len(body) == 0 {
-		return nil, errors.New("empty body")
+		return nil, "", errors.New("empty body")
 	}
 
 	nl := &NonLexical{
@@ -26,7 +24,7 @@ func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexica
 	}
 
 	if h, err := symbols.Atoi(head); err != nil {
-		return nil, err
+		return nil, "", err
 	} else {
 		nl.Head = h
 	}
@@ -35,27 +33,15 @@ func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexica
 		v, err := symbols.Atoi(b)
 
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 
 		nl.Body[i] = v
 	}
 
-	h := fnv.New64()
+	key := head + " " + strings.Join(body, " ")
 
-	_, _ = h.Write([]byte(head))
-
-	for _, b := range body {
-		_, _ = h.Write([]byte(b))
-	}
-
-	nl.key = h.Sum64()
-
-	return nl, nil
-}
-
-func (nl *NonLexical) Key() uint64 {
-	return nl.key
+	return nl, key, nil
 }
 
 func (nl *NonLexical) Weight() float64 {

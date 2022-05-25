@@ -50,13 +50,13 @@ func EvaluateTree(t *tree.Tree, g *grammar.Grammar) {
 			return
 		}
 
-		r, err := grammar.NewRule(t, g.Symbols)
+		r, k, err := grammar.NewRule(t, g.Symbols)
 
 		if err != nil {
 			return
 		}
 
-		if err := g.AddRule(r); err != nil {
+		if err := g.AddRule(r, k); err != nil {
 			panic(err) // TODO handle
 		}
 	})

@@ -9,7 +9,7 @@ type parse struct {
 	tokens  []string
 	heap    *Heap
 	matcher *Matcher
-	parser  *Parser
+	grammar *grammar.Grammar
 }
 
 func (p *parse) Parse() (*tree.Tree, error) {
@@ -24,11 +24,11 @@ func (p *parse) Parse() (*tree.Tree, error) {
 			continue
 		}
 
-		if item.n == p.parser.grammar.Initial() && item.i == 0 && item.j == len(p.tokens) {
+		if item.n == p.grammar.Initial() && item.i == 0 && item.j == len(p.tokens) {
 			return p.Tree(item, p.tokens)
 		}
 
-		for _, rule := range p.parser.grammar.Rules(item.n) {
+		for _, rule := range p.grammar.Rules(item.n) {
 			if len(rule.Body) == 2 {
 				if rule.Body[0] == item.n {
 					for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
@@ -54,7 +54,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 
 func (p *parse) Initialize() error {
 	for i, t := range p.tokens {
-		for _, r := range p.parser.grammar.Lexicon(t) {
+		for _, r := range p.grammar.Lexicon(t) {
 			lexical := &Item{
 				Span: Span{
 					i: i,
@@ -104,7 +104,7 @@ func (p *parse) Tree(root *Item, tokens []string) (*tree.Tree, error) {
 	backtrack = func(item *Item) (*tree.Tree, error) {
 		t := &tree.Tree{}
 
-		if label, err := p.parser.grammar.Symbols.Itoa(item.n); err != nil {
+		if label, err := p.grammar.Symbols.Itoa(item.n); err != nil {
 			return nil, err
 		} else {
 			t.Label = label

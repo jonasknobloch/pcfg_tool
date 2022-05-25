@@ -41,7 +41,7 @@ func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
 		tokens:  tokens,
 		heap:    NewHeap(),
 		matcher: NewMatcher(),
-		parser:  ps,
+		grammar: ps.grammar,
 	}
 
 	return p.Parse()

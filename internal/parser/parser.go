@@ -19,9 +19,7 @@ import (
 var ErrNoParse = errors.New("no parse")
 
 type Parser struct {
-	grammar     *grammar.Grammar
-	rulesRead   sync.Mutex
-	lexiconRead sync.Mutex
+	grammar *grammar.Grammar
 }
 
 func NewParser(g *grammar.Grammar) (*Parser, error) {
@@ -30,9 +28,7 @@ func NewParser(g *grammar.Grammar) (*Parser, error) {
 	}
 
 	return &Parser{
-		grammar:     g,
-		rulesRead:   sync.Mutex{},
-		lexiconRead: sync.Mutex{},
+		grammar: g,
 	}, nil
 }
 

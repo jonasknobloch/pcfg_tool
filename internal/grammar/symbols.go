@@ -1,21 +1,20 @@
 package grammar
 
-import (
-	"errors"
-	"hash/fnv"
-)
+import "errors"
 
 type SymbolTable struct {
-	atoi map[string]int
-	itoa map[int]string
+	index int
+	atoi  map[string]int
+	itoa  map[int]string
 }
 
 var ErrUnknownSymbol = errors.New("unknown symbol")
 
 func NewSymbolTable() *SymbolTable {
 	return &SymbolTable{
-		atoi: make(map[string]int),
-		itoa: make(map[int]string),
+		index: 0,
+		atoi:  make(map[string]int),
+		itoa:  make(map[int]string),
 	}
 }
 
@@ -24,18 +23,12 @@ func (st *SymbolTable) Atoi(s string) (int, error) {
 		return i, nil
 	}
 
-	h := fnv.New32a()
+	st.index++
 
-	if _, err := h.Write([]byte(s)); err != nil {
-		return 0, err
-	}
+	st.itoa[st.index] = s
+	st.atoi[s] = st.index
 
-	i := int(h.Sum32())
-
-	st.itoa[i] = s
-	st.atoi[s] = i
-
-	return i, nil
+	return st.index, nil
 }
 
 func (st *SymbolTable) Itoa(i int) (string, error) {

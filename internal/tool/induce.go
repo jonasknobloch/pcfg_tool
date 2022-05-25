@@ -32,7 +32,9 @@ func Induce(file *os.File) *grammar.Grammar {
 			n = t.Label
 		}
 
-		EvaluateTree(t, g)
+		if err := EvaluateTree(t, g); err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	g.Normalize()
@@ -44,20 +46,37 @@ func Induce(file *os.File) *grammar.Grammar {
 	return g
 }
 
-func EvaluateTree(t *tree.Tree, g *grammar.Grammar) {
-	t.Walk(func(t *tree.Tree) {
+func EvaluateTree(t *tree.Tree, g *grammar.Grammar) error {
+	var walk func(*tree.Tree, func(t *tree.Tree) error) error
+	walk = func(t *tree.Tree, cb func(t *tree.Tree) error) error {
+		if err := cb(t); err != nil {
+			return err
+		}
+
+		for _, c := range t.Children {
+			if err := walk(c, cb); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	return walk(t, func(t *tree.Tree) error {
 		if len(t.Children) == 0 {
-			return
+			return nil
 		}
 
 		r, k, err := grammar.NewRule(t, g.Symbols)
 
 		if err != nil {
-			return
+			return err
 		}
 
 		if err := g.AddRule(r, k); err != nil {
-			panic(err) // TODO handle
+			return err
 		}
+
+		return nil
 	})
 }

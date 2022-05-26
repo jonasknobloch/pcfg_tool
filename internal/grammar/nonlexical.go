@@ -2,7 +2,6 @@ package grammar
 
 import (
 	"errors"
-	"fmt"
 	"pcfg_tool/internal/utility"
 	"strings"
 )
@@ -70,7 +69,8 @@ func (nl *NonLexical) String(st *SymbolTable) (string, error) {
 		sb.WriteString(v)
 	}
 
-	sb.WriteString(fmt.Sprintf(" %s\n", utility.FormatWeight(nl.weight)))
+	sb.WriteString(" ")
+	sb.WriteString(utility.FormatWeight(nl.weight))
 
 	return sb.String(), nil
 }

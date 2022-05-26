@@ -317,7 +317,7 @@ func (g *Grammar) Export(grammar string) error {
 				return err
 			}
 
-			if _, err := rules.WriteString(s); err != nil {
+			if _, err := rules.WriteString(s + "\n"); err != nil {
 				return err
 			}
 		}
@@ -331,7 +331,7 @@ func (g *Grammar) Export(grammar string) error {
 				return err
 			}
 
-			if _, err := lexicon.WriteString(s); err != nil {
+			if _, err := lexicon.WriteString(s + "\n"); err != nil {
 				return err
 			}
 		}

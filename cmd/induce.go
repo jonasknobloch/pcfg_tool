@@ -19,12 +19,13 @@ var induceCmd = &cobra.Command{
 
 		g := tool.Induce(stdin)
 
-		if len(args) == 0 {
-			g.Print()
-			return
+		var grammar string
+
+		if len(args) > 0 {
+			grammar = args[0]
 		}
 
-		if err := g.Export(args[0]); err != nil {
+		if err := g.Export(grammar); err != nil {
 			log.Fatal(err)
 		}
 	},

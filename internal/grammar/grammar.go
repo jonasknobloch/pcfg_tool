@@ -3,9 +3,7 @@ package grammar
 import (
 	"bufio"
 	"errors"
-	"fmt"
 	"os"
-	"pcfg_tool/internal/utility"
 	"strconv"
 	"strings"
 	"sync"
@@ -215,51 +213,6 @@ func (g *Grammar) Lexicon(body string) []*Lexical {
 	return lexicon
 }
 
-func (g *Grammar) Print() error {
-	printRule := func(rule Rule) error {
-		var sb strings.Builder
-
-		key, err := rule.String(g.Symbols)
-
-		if err != nil {
-			return err
-		}
-
-		sb.WriteString(key)
-		sb.WriteString(fmt.Sprintf(" %s", utility.FormatWeight(rule.Weight())))
-
-		fmt.Println(sb.String())
-
-		return nil
-	}
-
-	for _, nls := range g.rules.left {
-		for _, nl := range nls {
-			err := printRule(nl)
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for _, ls := range g.lexicon.left {
-		for _, l := range ls {
-			err := printRule(l)
-
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	for t := range g.words {
-		fmt.Println(t)
-	}
-
-	return nil
-}
-
 func (g *Grammar) Import(rules, lexicon string) error {
 	var rS *bufio.Scanner
 	var lS *bufio.Scanner
@@ -330,22 +283,30 @@ func (g *Grammar) Export(grammar string) error {
 	var lexicon *bufio.Writer
 	var words *bufio.Writer
 
-	if file, err := os.Create(grammar + ".rules"); err != nil {
-		return err
-	} else {
-		rules = bufio.NewWriter(file)
-	}
+	if grammar != "" {
+		if file, err := os.Create(grammar + ".rules"); err != nil {
+			return err
+		} else {
+			rules = bufio.NewWriter(file)
+		}
 
-	if file, err := os.Create(grammar + ".lexicon"); err != nil {
-		return err
-	} else {
-		lexicon = bufio.NewWriter(file)
-	}
+		if file, err := os.Create(grammar + ".lexicon"); err != nil {
+			return err
+		} else {
+			lexicon = bufio.NewWriter(file)
+		}
 
-	if file, err := os.Create(grammar + ".words"); err != nil {
-		return err
+		if file, err := os.Create(grammar + ".words"); err != nil {
+			return err
+		} else {
+			words = bufio.NewWriter(file)
+		}
 	} else {
-		words = bufio.NewWriter(file)
+		writer := bufio.NewWriter(os.Stdout)
+
+		rules = writer
+		lexicon = writer
+		words = writer
 	}
 
 	for _, nls := range g.rules.left {

@@ -6,7 +6,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 type Grammar struct {
@@ -15,13 +14,11 @@ type Grammar struct {
 		left  map[int][]*NonLexical
 		right map[int][]*NonLexical
 		key   map[string]*NonLexical
-		mutex sync.RWMutex
 	}
 	lexicon struct {
 		left  map[int][]*Lexical
 		right map[string][]*Lexical
 		key   map[string]*Lexical
-		mutex sync.RWMutex
 	}
 	words   map[string]struct{}
 	Symbols *SymbolTable
@@ -35,23 +32,19 @@ func NewGrammar() *Grammar {
 			left  map[int][]*NonLexical
 			right map[int][]*NonLexical
 			key   map[string]*NonLexical
-			mutex sync.RWMutex
 		}{
 			left:  make(map[int][]*NonLexical),
 			right: make(map[int][]*NonLexical),
 			key:   make(map[string]*NonLexical),
-			mutex: sync.RWMutex{},
 		},
 		lexicon: struct {
 			left  map[int][]*Lexical
 			right map[string][]*Lexical
 			key   map[string]*Lexical
-			mutex sync.RWMutex
 		}{
 			left:  make(map[int][]*Lexical),
 			right: make(map[string][]*Lexical),
 			key:   make(map[string]*Lexical),
-			mutex: sync.RWMutex{},
 		},
 		words:   make(map[string]struct{}),
 		Symbols: NewSymbolTable(),
@@ -188,9 +181,6 @@ func (g *Grammar) IsNormalized() bool {
 }
 
 func (g *Grammar) Rules(body int) []*NonLexical {
-	g.rules.mutex.Lock()
-	defer g.rules.mutex.Unlock()
-
 	rules, ok := g.rules.right[body]
 
 	if !ok {
@@ -201,9 +191,6 @@ func (g *Grammar) Rules(body int) []*NonLexical {
 }
 
 func (g *Grammar) Lexicon(body string) []*Lexical {
-	g.lexicon.mutex.Lock()
-	defer g.lexicon.mutex.Unlock()
-
 	lexicon, ok := g.lexicon.right[body]
 
 	if !ok {

@@ -11,21 +11,17 @@ type Lexical struct {
 	weight float64
 }
 
-func NewLexical(head, body string, symbols *SymbolTable) (*Lexical, string, error) {
+func NewLexical(head, body string, symbols *SymbolTable) (*Lexical, string) {
 	l := &Lexical{
 		weight: 1,
 		Body:   body,
 	}
 
-	if h, err := symbols.Atoi(head); err != nil {
-		return nil, "", err
-	} else {
-		l.Head = h
-	}
+	l.Head = symbols.Atoi(head)
 
 	key := head + " " + body
 
-	return l, key, nil
+	return l, key
 }
 
 func (l *Lexical) Weight() float64 {

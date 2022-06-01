@@ -38,10 +38,7 @@ func Induce(file *os.File) *grammar.Grammar {
 	}
 
 	g.Normalize()
-
-	if err := g.SetInitial(n); err != nil {
-		log.Fatal(err)
-	}
+	g.SetInitial(n)
 
 	return g
 }

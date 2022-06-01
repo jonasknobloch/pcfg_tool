@@ -1,7 +1,6 @@
 package grammar
 
 import (
-	"errors"
 	"pcfg_tool/internal/utility"
 	"strings"
 )
@@ -12,9 +11,9 @@ type NonLexical struct {
 	weight float64
 }
 
-func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexical, string, error) {
+func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexical, string) {
 	if len(body) == 0 {
-		return nil, "", errors.New("empty body")
+		body = []string{"X"}
 	}
 
 	nl := &NonLexical{
@@ -22,25 +21,15 @@ func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexica
 		Body:   make([]int, len(body)),
 	}
 
-	if h, err := symbols.Atoi(head); err != nil {
-		return nil, "", err
-	} else {
-		nl.Head = h
-	}
+	nl.Head = symbols.Atoi(head)
 
 	for i, b := range body {
-		v, err := symbols.Atoi(b)
-
-		if err != nil {
-			return nil, "", err
-		}
-
-		nl.Body[i] = v
+		nl.Body[i] = symbols.Atoi(b)
 	}
 
 	key := head + " " + strings.Join(body, " ")
 
-	return nl, key, nil
+	return nl, key
 }
 
 func (nl *NonLexical) Weight() float64 {

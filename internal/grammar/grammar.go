@@ -55,12 +55,8 @@ func (g *Grammar) Initial() int {
 	return g.initial
 }
 
-func (g *Grammar) SetInitial(n string) error {
-	var err error
-
-	g.initial, err = g.Symbols.Atoi(n)
-
-	return err
+func (g *Grammar) SetInitial(n string) {
+	g.initial = g.Symbols.Atoi(n)
 }
 
 func (g *Grammar) AddRule(rule Rule, key string) error {
@@ -221,11 +217,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for rS.Scan() {
 		t := strings.Split(rS.Text(), " ")
 
-		r, k, err := NewNonLexical(t[0], t[2:len(t)-1], g.Symbols)
-
-		if err != nil {
-			return err
-		}
+		r, k := NewNonLexical(t[0], t[2:len(t)-1], g.Symbols)
 
 		w, err := strconv.ParseFloat(t[len(t)-1], 64)
 
@@ -243,11 +235,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for lS.Scan() {
 		t := strings.Split(lS.Text(), " ")
 
-		r, k, err := NewLexical(t[0], t[1], g.Symbols)
-
-		if err != nil {
-			return err
-		}
+		r, k := NewLexical(t[0], t[1], g.Symbols)
 
 		w, err := strconv.ParseFloat(t[2], 64)
 

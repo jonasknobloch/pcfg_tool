@@ -18,9 +18,9 @@ func NewSymbolTable() *SymbolTable {
 	}
 }
 
-func (st *SymbolTable) Atoi(s string) (int, error) {
+func (st *SymbolTable) Atoi(s string) int {
 	if i, ok := st.atoi[s]; ok {
-		return i, nil
+		return i
 	}
 
 	st.index++
@@ -28,7 +28,7 @@ func (st *SymbolTable) Atoi(s string) (int, error) {
 	st.itoa[st.index] = s
 	st.atoi[s] = st.index
 
-	return st.index, nil
+	return st.index
 }
 
 func (st *SymbolTable) Itoa(i int) (string, error) {

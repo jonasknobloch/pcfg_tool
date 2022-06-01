@@ -11,11 +11,7 @@ func TestSymbolTable(t *testing.T) {
 	st := NewSymbolTable()
 
 	for _, c := range []string{"foo", "bar", "baz"} {
-		i, err := st.Atoi(c)
-
-		if err != nil {
-			t.Errorf("unexptected error: %v", err)
-		}
+		i := st.Atoi(c)
 
 		s, err := st.Itoa(i)
 

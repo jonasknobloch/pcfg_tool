@@ -16,7 +16,7 @@ func NewRule(t *tree.Tree, st *SymbolTable) (Rule, string, error) {
 	}
 
 	if len(t.Children[0].Children) == 0 {
-		l, k := NewLexical(t.Label, t.Children[0].Label, st)
+		l, k := NewLexical(t.Label, t.Children[0].Label, 1, st)
 
 		return l, k, nil
 	}
@@ -27,7 +27,7 @@ func NewRule(t *tree.Tree, st *SymbolTable) (Rule, string, error) {
 		ls[i] = st.Label
 	}
 
-	l, k := NewNonLexical(t.Label, ls, st)
+	l, k := NewNonLexical(t.Label, ls, 1, st)
 
 	return l, k, nil
 }

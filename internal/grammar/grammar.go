@@ -217,7 +217,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for rS.Scan() {
 		t := strings.Split(rS.Text(), " ")
 
-		r, k := NewNonLexical(t[0], t[2:len(t)-1], g.Symbols)
+		r, k := NewNonLexical(t[0], t[2:len(t)-1], 1, g.Symbols)
 
 		w, err := strconv.ParseFloat(t[len(t)-1], 64)
 
@@ -235,7 +235,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for lS.Scan() {
 		t := strings.Split(lS.Text(), " ")
 
-		r, k := NewLexical(t[0], t[1], g.Symbols)
+		r, k := NewLexical(t[0], t[1], 1, g.Symbols)
 
 		w, err := strconv.ParseFloat(t[2], 64)
 

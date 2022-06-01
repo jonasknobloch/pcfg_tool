@@ -11,9 +11,9 @@ type Lexical struct {
 	weight float64
 }
 
-func NewLexical(head, body string, symbols *SymbolTable) (*Lexical, string) {
+func NewLexical(head, body string, weight float64, symbols *SymbolTable) (*Lexical, string) {
 	l := &Lexical{
-		weight: 1,
+		weight: weight,
 		Body:   body,
 	}
 

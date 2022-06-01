@@ -11,13 +11,13 @@ type NonLexical struct {
 	weight float64
 }
 
-func NewNonLexical(head string, body []string, symbols *SymbolTable) (*NonLexical, string) {
+func NewNonLexical(head string, body []string, weight float64, symbols *SymbolTable) (*NonLexical, string) {
 	if len(body) == 0 {
 		body = []string{"X"}
 	}
 
 	nl := &NonLexical{
-		weight: 1,
+		weight: weight,
 		Body:   make([]int, len(body)),
 	}
 

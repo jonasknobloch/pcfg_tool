@@ -60,26 +60,24 @@ func (g *Grammar) SetInitial(n string) {
 }
 
 func (g *Grammar) AddRule(rule Rule, key string) error {
-	var err error
-
 	switch v := rule.(type) {
 	case *NonLexical:
-		err = g.AddNonLexical(v, key)
+		g.AddNonLexical(v, key)
 	case *Lexical:
-		err = g.AddLexical(v, key)
+		g.AddLexical(v, key)
 	default:
-		err = ErrUnknownRuleType
+		return ErrUnknownRuleType
 	}
 
-	return err
+	return nil
 }
 
-func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) error {
+func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) {
 	if nl, ok := g.rules.key[key]; !ok {
 		g.rules.key[key] = nonLexical
 	} else {
 		nl.weight += nonLexical.weight
-		return nil
+		return
 	}
 
 	if _, ok := g.rules.left[nonLexical.Head]; !ok {
@@ -95,16 +93,14 @@ func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) error {
 
 		g.rules.right[b] = append(g.rules.right[b], nonLexical)
 	}
-
-	return nil
 }
 
-func (g *Grammar) AddLexical(lexical *Lexical, key string) error {
+func (g *Grammar) AddLexical(lexical *Lexical, key string) {
 	if l, ok := g.lexicon.key[key]; !ok {
 		g.lexicon.key[key] = lexical
 	} else {
 		l.weight += lexical.weight
-		return nil
+		return
 	}
 
 	if _, ok := g.lexicon.left[lexical.Head]; !ok {
@@ -120,8 +116,6 @@ func (g *Grammar) AddLexical(lexical *Lexical, key string) error {
 	g.lexicon.right[lexical.Body] = append(g.lexicon.right[lexical.Body], lexical)
 
 	g.words[lexical.Body] = struct{}{}
-
-	return nil
 }
 
 func (g *Grammar) Normalize() {
@@ -217,25 +211,17 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	for rS.Scan() {
 		t := strings.Split(rS.Text(), " ")
 
-		r, k := NewNonLexical(t[0], t[2:len(t)-1], 1, g.Symbols)
-
 		w, err := strconv.ParseFloat(t[len(t)-1], 64)
 
 		if err != nil {
 			return err
 		}
 
-		r.weight = w
-
-		if err := g.AddRule(r, k); err != nil {
-			return err
-		}
+		g.AddNonLexical(NewNonLexical(t[0], t[2:len(t)-1], w, g.Symbols))
 	}
 
 	for lS.Scan() {
 		t := strings.Split(lS.Text(), " ")
-
-		r, k := NewLexical(t[0], t[1], 1, g.Symbols)
 
 		w, err := strconv.ParseFloat(t[2], 64)
 
@@ -243,11 +229,7 @@ func (g *Grammar) Import(rules, lexicon string) error {
 			return err
 		}
 
-		r.weight = w
-
-		if err := g.AddRule(r, k); err != nil {
-			return err
-		}
+		g.AddLexical(NewLexical(t[0], t[1], w, g.Symbols))
 	}
 
 	return nil

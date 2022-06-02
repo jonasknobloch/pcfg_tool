@@ -13,9 +13,7 @@ type parse struct {
 }
 
 func (p *parse) Parse() (*tree.Tree, error) {
-	if err := p.Initialize(); err != nil {
-		return nil, err
-	}
+	p.Initialize()
 
 	for !p.heap.Empty() {
 		item, _ := p.heap.Pop()
@@ -52,7 +50,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 	return nil, ErrNoParse
 }
 
-func (p *parse) Initialize() error {
+func (p *parse) Initialize() {
 	for i, t := range p.tokens {
 		for _, r := range p.grammar.Lexicon(t) {
 			lexical := &Item{
@@ -67,8 +65,6 @@ func (p *parse) Initialize() error {
 			p.heap.Push(lexical)
 		}
 	}
-
-	return nil
 }
 
 func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {

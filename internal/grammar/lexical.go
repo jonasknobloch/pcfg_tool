@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"pcfg_tool/internal/utility"
+	"strconv"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ type Lexical struct {
 	weight float64
 }
 
-func NewLexical(head, body string, weight float64, symbols *SymbolTable) (*Lexical, string) {
+func NewLexical(head, body string, weight float64, symbols *SymbolTable) *Lexical {
 	l := &Lexical{
 		weight: weight,
 		Body:   body,
@@ -19,13 +20,15 @@ func NewLexical(head, body string, weight float64, symbols *SymbolTable) (*Lexic
 
 	l.Head = symbols.Atoi(head)
 
-	key := head + " " + body
-
-	return l, key
+	return l
 }
 
 func (l *Lexical) Weight() float64 {
 	return l.weight
+}
+
+func (l *Lexical) Key() string {
+	return strconv.Itoa(l.Head) + " " + l.Body
 }
 
 func (l *Lexical) String(st *SymbolTable) (string, error) {

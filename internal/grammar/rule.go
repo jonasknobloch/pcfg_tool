@@ -7,18 +7,17 @@ import (
 
 type Rule interface {
 	Weight() float64
+	Key() string
 	String(st *SymbolTable) (string, error)
 }
 
-func NewRule(t *tree.Tree, st *SymbolTable) (Rule, string, error) {
+func NewRule(t *tree.Tree, st *SymbolTable) (Rule, error) {
 	if len(t.Children) == 0 {
-		return nil, "", errors.New("tree has no children")
+		return nil, errors.New("tree has no children")
 	}
 
 	if len(t.Children[0].Children) == 0 {
-		l, k := NewLexical(t.Label, t.Children[0].Label, 1, st)
-
-		return l, k, nil
+		return NewLexical(t.Label, t.Children[0].Label, 1, st), nil
 	}
 
 	ls := make([]string, len(t.Children))
@@ -27,7 +26,5 @@ func NewRule(t *tree.Tree, st *SymbolTable) (Rule, string, error) {
 		ls[i] = st.Label
 	}
 
-	l, k := NewNonLexical(t.Label, ls, 1, st)
-
-	return l, k, nil
+	return NewNonLexical(t.Label, ls, 1, st), nil
 }

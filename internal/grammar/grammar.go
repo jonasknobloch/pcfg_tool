@@ -59,12 +59,12 @@ func (g *Grammar) SetInitial(n string) {
 	g.initial = g.Symbols.Atoi(n)
 }
 
-func (g *Grammar) AddRule(rule Rule, key string) error {
+func (g *Grammar) AddRule(rule Rule) error {
 	switch v := rule.(type) {
 	case *NonLexical:
-		g.AddNonLexical(v, key)
+		g.AddNonLexical(v)
 	case *Lexical:
-		g.AddLexical(v, key)
+		g.AddLexical(v)
 	default:
 		return ErrUnknownRuleType
 	}
@@ -72,7 +72,9 @@ func (g *Grammar) AddRule(rule Rule, key string) error {
 	return nil
 }
 
-func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) {
+func (g *Grammar) AddNonLexical(nonLexical *NonLexical) {
+	key := nonLexical.Key()
+
 	if nl, ok := g.rules.key[key]; !ok {
 		g.rules.key[key] = nonLexical
 	} else {
@@ -95,7 +97,9 @@ func (g *Grammar) AddNonLexical(nonLexical *NonLexical, key string) {
 	}
 }
 
-func (g *Grammar) AddLexical(lexical *Lexical, key string) {
+func (g *Grammar) AddLexical(lexical *Lexical) {
+	key := lexical.Key()
+
 	if l, ok := g.lexicon.key[key]; !ok {
 		g.lexicon.key[key] = lexical
 	} else {

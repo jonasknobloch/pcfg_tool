@@ -2,6 +2,7 @@ package grammar
 
 import (
 	"pcfg_tool/internal/utility"
+	"strconv"
 	"strings"
 )
 
@@ -11,7 +12,7 @@ type NonLexical struct {
 	weight float64
 }
 
-func NewNonLexical(head string, body []string, weight float64, symbols *SymbolTable) (*NonLexical, string) {
+func NewNonLexical(head string, body []string, weight float64, symbols *SymbolTable) *NonLexical {
 	if len(body) == 0 {
 		body = []string{"X"}
 	}
@@ -27,13 +28,24 @@ func NewNonLexical(head string, body []string, weight float64, symbols *SymbolTa
 		nl.Body[i] = symbols.Atoi(b)
 	}
 
-	key := head + " " + strings.Join(body, " ")
-
-	return nl, key
+	return nl
 }
 
 func (nl *NonLexical) Weight() float64 {
 	return nl.weight
+}
+
+func (nl *NonLexical) Key() string {
+	var sb strings.Builder
+
+	sb.WriteString(strconv.Itoa(nl.Head))
+
+	for _, b := range nl.Body {
+		sb.WriteString(" ")
+		sb.WriteString(strconv.Itoa(b))
+	}
+
+	return sb.String()
 }
 
 func (nl *NonLexical) String(st *SymbolTable) (string, error) {

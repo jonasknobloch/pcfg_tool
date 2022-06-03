@@ -166,7 +166,7 @@ func (g *Grammar) IsNormalized() bool {
 	}
 
 	for _, w := range symbols {
-		if w-0.1 > 1 && w+0.1 < 1 {
+		if w > 1.1 || w < 0.9 {
 			return false
 		}
 	}

@@ -194,23 +194,9 @@ func (g *Grammar) Lexicon(body string) []*Lexical {
 	return lexicon
 }
 
-func (g *Grammar) Import(rules, lexicon string) error {
-	var rS *bufio.Scanner
-	var lS *bufio.Scanner
-
-	if file, err := os.Open(rules); err != nil {
-		return err
-	} else {
-		rS = bufio.NewScanner(file)
-		defer file.Close()
-	}
-
-	if file, err := os.Open(lexicon); err != nil {
-		return err
-	} else {
-		lS = bufio.NewScanner(file)
-		defer file.Close()
-	}
+func (g *Grammar) Import(rules, lexicon *os.File) error {
+	rS := bufio.NewScanner(rules)
+	lS := bufio.NewScanner(lexicon)
 
 	for rS.Scan() {
 		t := strings.Split(rS.Text(), " ")
@@ -239,36 +225,10 @@ func (g *Grammar) Import(rules, lexicon string) error {
 	return nil
 }
 
-func (g *Grammar) Export(grammar string) error {
-	var rules *bufio.Writer
-	var lexicon *bufio.Writer
-	var words *bufio.Writer
-
-	if grammar != "" {
-		if file, err := os.Create(grammar + ".rules"); err != nil {
-			return err
-		} else {
-			rules = bufio.NewWriter(file)
-		}
-
-		if file, err := os.Create(grammar + ".lexicon"); err != nil {
-			return err
-		} else {
-			lexicon = bufio.NewWriter(file)
-		}
-
-		if file, err := os.Create(grammar + ".words"); err != nil {
-			return err
-		} else {
-			words = bufio.NewWriter(file)
-		}
-	} else {
-		writer := bufio.NewWriter(os.Stdout)
-
-		rules = writer
-		lexicon = writer
-		words = writer
-	}
+func (g *Grammar) Export(rules, lexicon, words *os.File) error {
+	rW := bufio.NewWriter(rules)
+	lW := bufio.NewWriter(lexicon)
+	wW := bufio.NewWriter(words)
 
 	for _, nls := range g.rules.left {
 		for _, nl := range nls {
@@ -278,7 +238,7 @@ func (g *Grammar) Export(grammar string) error {
 				return err
 			}
 
-			if _, err := rules.WriteString(s + "\n"); err != nil {
+			if _, err := rW.WriteString(s + "\n"); err != nil {
 				return err
 			}
 		}
@@ -292,29 +252,29 @@ func (g *Grammar) Export(grammar string) error {
 				return err
 			}
 
-			if _, err := lexicon.WriteString(s + "\n"); err != nil {
+			if _, err := lW.WriteString(s + "\n"); err != nil {
 				return err
 			}
 		}
 	}
 
 	for t := range g.words {
-		_, err := words.WriteString(t + "\n")
+		_, err := wW.WriteString(t + "\n")
 
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := rules.Flush(); err != nil {
+	if err := rW.Flush(); err != nil {
 		return err
 	}
 
-	if err := lexicon.Flush(); err != nil {
+	if err := lW.Flush(); err != nil {
 		return err
 	}
 
-	if err := words.Flush(); err != nil {
+	if err := wW.Flush(); err != nil {
 		return err
 	}
 

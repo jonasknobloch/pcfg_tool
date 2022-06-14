@@ -3,29 +3,34 @@ package tool
 import (
 	"bufio"
 	"github.com/jonasknobloch/jinn/pkg/tree"
-	"log"
 	"os"
 	"pcfg_tool/internal/grammar"
+	"pcfg_tool/internal/utility"
 )
 
-func Induce(file *os.File) *grammar.Grammar {
-	dec := tree.NewDecoder()
+func Induce(input string, rules, lexicon, words string) error {
+	var scanner *bufio.Scanner
 
-	fs := bufio.NewScanner(file)
+	if f, err := utility.OpenFile(input); err != nil {
+		return err
+	} else {
+		scanner = bufio.NewScanner(f)
 
-	fs.Split(bufio.ScanLines)
+		defer f.Close()
+	}
 
+	d := tree.NewDecoder()
 	g := grammar.NewGrammar()
 
 	var n string
 
-	for fs.Scan() {
-		gold := fs.Text()
+	for scanner.Scan() {
+		gold := scanner.Text()
 
-		t, err := dec.Decode(gold)
+		t, err := d.Decode(gold)
 
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 
 		if n != t.Label {
@@ -33,14 +38,38 @@ func Induce(file *os.File) *grammar.Grammar {
 		}
 
 		if err := EvaluateTree(t, g); err != nil {
-			log.Fatal(err)
+			return err
 		}
 	}
 
 	g.Normalize()
 	g.SetInitial(n)
 
-	return g
+	var r *os.File
+	var l *os.File
+	var w *os.File
+
+	var err error
+
+	if r, err = utility.CreateFile(rules); err != nil {
+		return err
+	}
+
+	defer r.Close()
+
+	if l, err = utility.CreateFile(lexicon); err != nil {
+		return err
+	}
+
+	defer l.Close()
+
+	if w, err = utility.CreateFile(words); err != nil {
+		return err
+	}
+
+	defer w.Close()
+
+	return g.Export(r, l, w)
 }
 
 func EvaluateTree(t *tree.Tree, g *grammar.Grammar) error {

@@ -91,8 +91,8 @@ func (vs *ViterbiScores) CalcOutside(g *Grammar) {
 	}
 }
 
-func (vs *ViterbiScores) Export(grammar *os.File, symbols *SymbolTable) error {
-	writer := bufio.NewWriter(grammar)
+func (vs *ViterbiScores) Export(outside *os.File, symbols *SymbolTable) error {
+	writer := bufio.NewWriter(outside)
 
 	for v, w := range vs.outside {
 		s, err := symbols.Itoa(v)

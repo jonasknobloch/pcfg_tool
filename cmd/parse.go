@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"log"
+	"os"
 	"pcfg_tool/internal/tool"
 )
 
@@ -13,12 +15,11 @@ var parseCmd = &cobra.Command{
 		"PCFG.",
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		stdin := OpenStdin()
-		defer stdin.Close()
-
 		n := cmd.Flag("initial-nonterminal").Value.String()
 
-		tool.Parse(args[0], args[1], n, stdin)
+		if err := tool.Parse(args[0], args[1], n, os.Getenv("STDIN")); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 

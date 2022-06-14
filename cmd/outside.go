@@ -3,7 +3,6 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"log"
-	"os"
 	"pcfg_tool/internal/tool"
 )
 
@@ -17,19 +16,15 @@ var outsideCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		n := cmd.Flag("initial-nonterminal").Value.String()
 
-		var out *os.File
+		var outside string
 
 		if len(args) == 3 {
-			if f, err := os.Create(args[2] + ".outside"); err != nil {
-				log.Fatal(err)
-			} else {
-				out = f
-			}
-		} else {
-			out = os.Stdout
+			outside = args[2] + ".outside"
 		}
 
-		tool.Outside(args[0], args[1], n, out)
+		if err := tool.Outside(args[0], args[1], n, outside); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 

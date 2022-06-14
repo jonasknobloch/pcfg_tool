@@ -3,6 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"log"
+	"os"
 	"pcfg_tool/internal/tool"
 )
 
@@ -14,18 +15,17 @@ var induceCmd = &cobra.Command{
 		"GRAMMAR.rules, GRAMMAR.lexicon, and GRAMMAR.words files instead.`,",
 	Args: cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		stdin := OpenStdin()
-		defer stdin.Close()
+		var rules string
+		var lexicon string
+		var words string
 
-		g := tool.Induce(stdin)
-
-		var grammar string
-
-		if len(args) > 0 {
-			grammar = args[0]
+		if len(args) == 1 {
+			rules = args[0] + ".rules"
+			lexicon = args[0] + ".lexicon"
+			words = args[0] + ".words"
 		}
 
-		if err := g.Export(grammar); err != nil {
+		if err := tool.Induce(os.Getenv("STDIN"), rules, lexicon, words); err != nil {
 			log.Fatal(err)
 		}
 	},

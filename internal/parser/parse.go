@@ -60,18 +60,18 @@ func (p *parse) Parse() (*tree.Tree, error) {
 			left, right := p.iMatcher.Match(item)
 
 			for _, c := range right {
-				for _, rule := range p.grammar.ExactRules(item.n, c.n) {
+				for _, rule := range p.grammar.ExactRules([2]int{item.n, c.n}) {
 					p.Combine(item, c, rule)
 				}
 			}
 
 			for _, c := range left {
-				for _, rule := range p.grammar.ExactRules(c.n, item.n) {
+				for _, rule := range p.grammar.ExactRules([2]int{c.n, item.n}) {
 					p.Combine(c, item, rule)
 				}
 			}
 
-			for _, rule := range p.grammar.ExactRules(item.n) {
+			for _, rule := range p.grammar.ExactRules([2]int{item.n}) {
 				p.Chain(item, rule)
 			}
 		}

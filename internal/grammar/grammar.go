@@ -13,7 +13,7 @@ type Grammar struct {
 	rules   struct {
 		left  map[int][]*NonLexical
 		right map[int][]*NonLexical
-		body  map[string][]*NonLexical
+		body  map[[2]int][]*NonLexical
 		key   map[string]*NonLexical
 	}
 	lexicon struct {
@@ -32,12 +32,12 @@ func NewGrammar() *Grammar {
 		rules: struct {
 			left  map[int][]*NonLexical
 			right map[int][]*NonLexical
-			body  map[string][]*NonLexical
+			body  map[[2]int][]*NonLexical
 			key   map[string]*NonLexical
 		}{
 			left:  make(map[int][]*NonLexical),
 			right: make(map[int][]*NonLexical),
-			body:  make(map[string][]*NonLexical),
+			body:  make(map[[2]int][]*NonLexical),
 			key:   make(map[string]*NonLexical),
 		},
 		lexicon: struct {
@@ -85,7 +85,11 @@ func (g *Grammar) AddNonLexical(nonLexical *NonLexical) {
 		return
 	}
 
-	body := key[strings.Index(key, " ")+1:]
+	body := [2]int{nonLexical.Body[0]}
+
+	if l := len(nonLexical.Body); l > 1 {
+		body[1] = nonLexical.Body[l-1]
+	}
 
 	if _, ok := g.rules.body[body]; !ok {
 		g.rules.body[body] = make([]*NonLexical, 0)
@@ -195,17 +199,8 @@ func (g *Grammar) Rules(body int) []*NonLexical {
 	return rules
 }
 
-func (g *Grammar) ExactRules(body ...int) []*NonLexical {
-	var sb strings.Builder
-
-	for _, b := range body {
-		sb.WriteString(" ")
-		sb.WriteString(strconv.Itoa(b))
-	}
-
-	key := sb.String()[1:]
-
-	rules, ok := g.rules.body[key]
+func (g *Grammar) ExactRules(body [2]int) []*NonLexical {
+	rules, ok := g.rules.body[body]
 
 	if !ok {
 		rules = []*NonLexical{}

@@ -33,11 +33,19 @@ func NewParser(g *grammar.Grammar) (*Parser, error) {
 }
 
 func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
+	vs, err := grammar.NewViterbiScores(ps.grammar)
+
+	if err != nil {
+		return nil, err
+	}
+
 	p := &parse{
-		tokens:  tokens,
-		heap:    NewHeap(),
-		matcher: NewMatcher(),
-		grammar: ps.grammar,
+		tokens:   tokens,
+		heap:     NewHeap(),
+		matcher:  NewMatcher(),
+		iMatcher: NewItemMatcher(),
+		grammar:  ps.grammar,
+		viterbi:  vs,
 	}
 
 	return p.Parse()

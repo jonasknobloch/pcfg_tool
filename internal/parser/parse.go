@@ -6,11 +6,15 @@ import (
 )
 
 type parse struct {
-	tokens  []string
-	heap    *Heap
-	matcher *Matcher
-	grammar *grammar.Grammar
+	tokens   []string
+	heap     *Heap
+	matcher  *Matcher
+	iMatcher *ItemMatcher
+	grammar  *grammar.Grammar
+	viterbi  *grammar.ViterbiScores
 }
+
+const UseItemMatcher = true
 
 func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
@@ -18,33 +22,60 @@ func (p *parse) Parse() (*tree.Tree, error) {
 	for !p.heap.Empty() {
 		item, _ := p.heap.Pop()
 
-		if ok := p.matcher.Add(item); !ok {
-			continue
+		if !UseItemMatcher {
+			if ok := p.matcher.Add(item); !ok {
+				continue
+			}
+		} else {
+			if ok := p.iMatcher.Add(item); !ok {
+				continue
+			}
 		}
 
 		if item.n == p.grammar.Initial() && item.i == 0 && item.j == len(p.tokens) {
 			return p.Tree(item, p.tokens)
 		}
 
-		for _, rule := range p.grammar.Rules(item.n) {
-			if len(rule.Body) == 2 {
-				if rule.Body[0] == item.n {
-					for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
-						p.Combine(item, c, rule)
+		if !UseItemMatcher {
+			for _, rule := range p.grammar.Rules(item.n) {
+				if len(rule.Body) == 2 {
+					if rule.Body[0] == item.n {
+						for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
+							p.Combine(item, c, rule)
+						}
+					}
+
+					if rule.Body[1] == item.n {
+						for _, c := range p.matcher.MatchRight(rule.Body[0], item.i) {
+							p.Combine(c, item, rule)
+						}
 					}
 				}
 
-				if rule.Body[1] == item.n {
-					for _, c := range p.matcher.MatchRight(rule.Body[0], item.i) {
-						p.Combine(c, item, rule)
-					}
+				if len(rule.Body) == 1 {
+					p.Chain(item, rule)
+				}
+			}
+		} else {
+			left, right := p.iMatcher.Match(item)
+
+			for _, c := range right {
+				for _, rule := range p.grammar.ExactRules(item.n, c.n) {
+					p.Combine(item, c, rule)
 				}
 			}
 
-			if len(rule.Body) == 1 {
+			for _, c := range left {
+				for _, rule := range p.grammar.ExactRules(c.n, item.n) {
+					p.Combine(c, item, rule)
+				}
+			}
+
+			for _, rule := range p.grammar.ExactRules(item.n) {
 				p.Chain(item, rule)
 			}
 		}
+
 	}
 
 	return nil, ErrNoParse

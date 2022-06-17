@@ -13,6 +13,7 @@ type Grammar struct {
 	rules   struct {
 		left  map[int][]*NonLexical
 		right map[int][]*NonLexical
+		body  map[string][]*NonLexical
 		key   map[string]*NonLexical
 	}
 	lexicon struct {
@@ -31,10 +32,12 @@ func NewGrammar() *Grammar {
 		rules: struct {
 			left  map[int][]*NonLexical
 			right map[int][]*NonLexical
+			body  map[string][]*NonLexical
 			key   map[string]*NonLexical
 		}{
 			left:  make(map[int][]*NonLexical),
 			right: make(map[int][]*NonLexical),
+			body:  make(map[string][]*NonLexical),
 			key:   make(map[string]*NonLexical),
 		},
 		lexicon: struct {
@@ -81,6 +84,14 @@ func (g *Grammar) AddNonLexical(nonLexical *NonLexical) {
 		nl.weight += nonLexical.weight
 		return
 	}
+
+	body := key[strings.Index(key, " ")+1:]
+
+	if _, ok := g.rules.body[body]; !ok {
+		g.rules.body[body] = make([]*NonLexical, 0)
+	}
+
+	g.rules.body[body] = append(g.rules.body[body], nonLexical)
 
 	if _, ok := g.rules.left[nonLexical.Head]; !ok {
 		g.rules.left[nonLexical.Head] = make([]*NonLexical, 0)
@@ -176,6 +187,25 @@ func (g *Grammar) IsNormalized() bool {
 
 func (g *Grammar) Rules(body int) []*NonLexical {
 	rules, ok := g.rules.right[body]
+
+	if !ok {
+		rules = []*NonLexical{}
+	}
+
+	return rules
+}
+
+func (g *Grammar) ExactRules(body ...int) []*NonLexical {
+	var sb strings.Builder
+
+	for _, b := range body {
+		sb.WriteString(" ")
+		sb.WriteString(strconv.Itoa(b))
+	}
+
+	key := sb.String()[1:]
+
+	rules, ok := g.rules.body[key]
 
 	if !ok {
 		rules = []*NonLexical{}

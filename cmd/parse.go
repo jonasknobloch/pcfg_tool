@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"github.com/spf13/cobra"
 	"log"
 	"os"
 	"pcfg_tool/internal/tool"
 )
+
+const ParadigmCYK = "cyk"
+const ParadigmDeductive = "deductive"
 
 var parseCmd = &cobra.Command{
 	Use:   "parse",
@@ -15,17 +19,26 @@ var parseCmd = &cobra.Command{
 		"PCFG.",
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
+		p := cmd.Flag("paradigm").Value.String()
 		n := cmd.Flag("initial-nonterminal").Value.String()
-		p := cmd.Flag("astar").Value.String()
+		a := cmd.Flag("astar").Value.String()
 
-		if err := tool.Parse(args[0], args[1], n, p, os.Getenv("STDIN")); err != nil {
+		if p != ParadigmDeductive {
+			if p == ParadigmCYK {
+				os.Exit(22)
+			}
+
+			log.Fatal(errors.New("unknown parser paradigm"))
+		}
+
+		if err := tool.Parse(args[0], args[1], n, a, os.Getenv("STDIN")); err != nil {
 			log.Fatal(err)
 		}
 	},
 }
 
 func init() {
-	parseCmd.PersistentFlags().StringP("paradigma", "p", "", "")
+	parseCmd.PersistentFlags().StringP("paradigm", "p", "deductive", "")
 	parseCmd.PersistentFlags().StringP("initial-nonterminal", "i", "ROOT", "")
 
 	parseCmd.PersistentFlags().BoolP("unking", "u", false, "")

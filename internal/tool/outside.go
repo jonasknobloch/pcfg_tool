@@ -32,11 +32,9 @@ func Outside(rules, lexicon string, n string, outside string) error {
 		return err
 	}
 
-	vs, err := grammar.NewViterbiScores(g)
+	vs := grammar.NewViterbiScores()
 
-	if err != nil {
-		return err
-	}
+	vs.CalcOutside(g)
 
 	o, err := utility.CreateFile(outside)
 
@@ -46,7 +44,7 @@ func Outside(rules, lexicon string, n string, outside string) error {
 
 	defer o.Close()
 
-	if err := vs.Export(o, g.Symbols); err != nil {
+	if err := vs.ExportOutside(o, g.Symbols); err != nil {
 		return err
 	}
 

@@ -20,15 +20,17 @@ var ErrNoParse = errors.New("no parse")
 
 type Parser struct {
 	grammar *grammar.Grammar
+	viterbi *grammar.ViterbiScores
 }
 
-func NewParser(g *grammar.Grammar) (*Parser, error) {
+func NewParser(g *grammar.Grammar, vs *grammar.ViterbiScores) (*Parser, error) {
 	if g.Initial() == 0 {
 		return nil, errors.New("grammar initial not set")
 	}
 
 	return &Parser{
 		grammar: g,
+		viterbi: vs,
 	}, nil
 }
 
@@ -38,6 +40,7 @@ func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
 		heap:    NewHeap(),
 		matcher: NewMatcher(),
 		grammar: ps.grammar,
+		viterbi: ps.viterbi,
 	}
 
 	return p.Parse()

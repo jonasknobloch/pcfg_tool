@@ -11,9 +11,9 @@ func TestHeap(t *testing.T) {
 
 	h := NewHeap()
 
-	h.Push(foo)
-	h.Push(bar)
-	h.Push(baz)
+	h.Push(foo, foo.weight)
+	h.Push(bar, bar.weight)
+	h.Push(baz, baz.weight)
 
 	for _, g := range []*Item{foo, baz, bar} {
 		if i, _ := h.Pop(); i != g {

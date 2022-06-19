@@ -8,7 +8,7 @@ import (
 	"pcfg_tool/internal/utility"
 )
 
-func Parse(rules, lexicon string, n string, input string) error {
+func Parse(rules, lexicon string, n string, path string, input string) error {
 	g := grammar.NewGrammar()
 
 	g.SetInitial(n)
@@ -32,7 +32,25 @@ func Parse(rules, lexicon string, n string, input string) error {
 		return err
 	}
 
-	p, err := parser.NewParser(g)
+	var vs *grammar.ViterbiScores
+
+	if path != "" {
+		var o *os.File
+
+		if f, err := os.Open(path); err != nil {
+			return err
+		} else {
+			o = f
+		}
+
+		vs = grammar.NewViterbiScores()
+
+		if err := vs.ImportOutside(o, g.Symbols); err != nil {
+			return err
+		}
+	}
+
+	p, err := parser.NewParser(g, vs)
 
 	if err != nil {
 		return err

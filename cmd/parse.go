@@ -16,8 +16,9 @@ var parseCmd = &cobra.Command{
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		n := cmd.Flag("initial-nonterminal").Value.String()
+		p := cmd.Flag("astar").Value.String()
 
-		if err := tool.Parse(args[0], args[1], n, os.Getenv("STDIN")); err != nil {
+		if err := tool.Parse(args[0], args[1], n, p, os.Getenv("STDIN")); err != nil {
 			log.Fatal(err)
 		}
 	},

@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"os"
 	"pcfg_tool/internal/utility"
+	"strconv"
+	"strings"
 )
 
 type ViterbiScores struct {
@@ -11,23 +13,20 @@ type ViterbiScores struct {
 	outside map[int]float64
 }
 
-func NewViterbiScores(g *Grammar) (*ViterbiScores, error) {
+func NewViterbiScores() *ViterbiScores {
 	vs := &ViterbiScores{
 		inside:  make(map[int]float64),
 		outside: make(map[int]float64),
 	}
 
-	vs.CalcInside(g)
-	vs.CalcOutside(g)
-
-	return vs, nil
+	return vs
 }
 
 func (vs *ViterbiScores) Outside(n int) float64 {
 	return vs.outside[n]
 }
 
-func (vs *ViterbiScores) CalcInside(g *Grammar) {
+func (vs *ViterbiScores) calcInside(g *Grammar) {
 	for head, rules := range g.lexicon.left {
 		for _, lexical := range rules {
 			if vs.inside[head] < lexical.weight {
@@ -61,6 +60,8 @@ func (vs *ViterbiScores) CalcInside(g *Grammar) {
 }
 
 func (vs *ViterbiScores) CalcOutside(g *Grammar) {
+	vs.calcInside(g)
+
 	vs.outside[g.initial] = 1
 
 	converged := false
@@ -91,7 +92,25 @@ func (vs *ViterbiScores) CalcOutside(g *Grammar) {
 	}
 }
 
-func (vs *ViterbiScores) Export(outside *os.File, symbols *SymbolTable) error {
+func (vs *ViterbiScores) ImportOutside(outside *os.File, symbols *SymbolTable) error {
+	scanner := bufio.NewScanner(outside)
+
+	for scanner.Scan() {
+		t := strings.Split(scanner.Text(), " ")
+
+		w, err := strconv.ParseFloat(t[1], 64)
+
+		if err != nil {
+			return err
+		}
+
+		vs.outside[symbols.Atoi(t[0])] = w
+	}
+
+	return nil
+}
+
+func (vs *ViterbiScores) ExportOutside(outside *os.File, symbols *SymbolTable) error {
 	writer := bufio.NewWriter(outside)
 
 	for v, w := range vs.outside {

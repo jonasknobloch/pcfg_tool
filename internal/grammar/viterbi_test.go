@@ -19,7 +19,9 @@ func TestViterbiScores_Outside(t *testing.T) {
 	g.AddNonLexical(NewNonLexical("X", []string{"A", "X"}, 0.2, g.Symbols))
 	g.AddNonLexical(NewNonLexical("Y", []string{"B", "Y"}, 0.3, g.Symbols))
 
-	vs, _ := NewViterbiScores(g)
+	vs := NewViterbiScores()
+
+	vs.CalcOutside(g)
 
 	outside := map[string]float64{
 		"ROOT": 1,

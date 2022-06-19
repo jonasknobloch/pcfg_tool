@@ -8,15 +8,20 @@ type Heap struct {
 	bh *binaryheap.Heap
 }
 
+type HeapItem struct {
+	item     *Item
+	priority float64
+}
+
 func NewHeap() *Heap {
-	inverseItemComparator := func(a, b interface{}) int {
-		aAsserted := a.(*Item)
-		bAsserted := b.(*Item)
+	inverseHeapItemComparator := func(a, b interface{}) int {
+		aAsserted := a.(HeapItem)
+		bAsserted := b.(HeapItem)
 
 		switch {
-		case aAsserted.Weight() > bAsserted.Weight():
+		case aAsserted.priority > bAsserted.priority:
 			return -1
-		case aAsserted.Weight() < bAsserted.Weight():
+		case aAsserted.priority < bAsserted.priority:
 			return 1
 		default:
 			return 0
@@ -24,12 +29,15 @@ func NewHeap() *Heap {
 	}
 
 	return &Heap{
-		bh: binaryheap.NewWith(inverseItemComparator),
+		bh: binaryheap.NewWith(inverseHeapItemComparator),
 	}
 }
 
-func (h *Heap) Push(item *Item) {
-	h.bh.Push(item)
+func (h *Heap) Push(item *Item, priority float64) {
+	h.bh.Push(HeapItem{
+		item:     item,
+		priority: priority,
+	})
 }
 
 func (h *Heap) Pop() (*Item, bool) {
@@ -39,13 +47,13 @@ func (h *Heap) Pop() (*Item, bool) {
 		return nil, false
 	}
 
-	item, ok := val.(*Item)
+	heapItem, ok := val.(HeapItem)
 
 	if !ok {
 		panic("unexpected item type")
 	}
 
-	return item, true
+	return heapItem.item, true
 }
 
 func (h *Heap) Empty() bool {

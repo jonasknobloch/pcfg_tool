@@ -10,6 +10,7 @@ type parse struct {
 	heap    *Heap
 	matcher *Matcher
 	grammar *grammar.Grammar
+	viterbi *grammar.ViterbiScores
 }
 
 func (p *parse) Parse() (*tree.Tree, error) {
@@ -50,6 +51,14 @@ func (p *parse) Parse() (*tree.Tree, error) {
 	return nil, ErrNoParse
 }
 
+func (p *parse) ItemPriority(i *Item) float64 {
+	if p.viterbi == nil {
+		return i.weight
+	}
+
+	return i.weight * p.viterbi.Outside(i.n)
+}
+
 func (p *parse) Initialize() {
 	for i, t := range p.tokens {
 		for _, r := range p.grammar.Lexicon(t) {
@@ -62,7 +71,7 @@ func (p *parse) Initialize() {
 				weight: r.Weight(),
 			}
 
-			p.heap.Push(lexical)
+			p.heap.Push(lexical, p.ItemPriority(lexical))
 		}
 	}
 }
@@ -78,7 +87,7 @@ func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {
 		backtracks: [2]*Item{c1, c2},
 	}
 
-	p.heap.Push(i)
+	p.heap.Push(i, p.ItemPriority(i))
 }
 
 func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
@@ -92,7 +101,7 @@ func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
 		backtracks: [2]*Item{c, nil},
 	}
 
-	p.heap.Push(i)
+	p.heap.Push(i, p.ItemPriority(i))
 }
 
 func (p *parse) Tree(root *Item, tokens []string) (*tree.Tree, error) {

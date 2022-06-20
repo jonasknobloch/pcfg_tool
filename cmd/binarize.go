@@ -28,7 +28,9 @@ var binarizeCmd = &cobra.Command{
 			log.Fatal(err)
 		}
 
-		if err := tool.Binarize(os.Getenv("STDIN"), os.Getenv("STDOUT"), horizontal, vertical); err != nil {
+		callback := tool.Markovize(horizontal, vertical)
+
+		if err := tool.Transform(os.Getenv("STDIN"), os.Getenv("STDOUT"), callback); err != nil {
 			log.Fatal(err)
 		}
 	},

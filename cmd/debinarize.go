@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
+	"log"
+	"os"
+	"pcfg_tool/internal/tool"
 )
 
 var debinarizeCmd = &cobra.Command{
@@ -13,7 +14,9 @@ var debinarizeCmd = &cobra.Command{
 	Long: "Reads a sequence of (binarized) constituent trees from standard input and outputs the original " +
 		"(non-binarized) constituent trees on standard output.",
 	Run: func(cmd *cobra.Command, args []string) {
-		os.Exit(22)
+		if err := tool.Transform(os.Getenv("STDIN"), os.Getenv("STDOUT"), tool.Demarkovize()); err != nil {
+			log.Fatal(err)
+		}
 	},
 }
 

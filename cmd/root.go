@@ -11,6 +11,10 @@ var rootCmd = &cobra.Command{
 	Short: "Tools for PCFG-based parsing of natural language sentences",
 }
 
+func init() {
+	rootCmd.PersistentFlags().BoolP("help", "", false, "")
+}
+
 func Execute() {
 	err := rootCmd.Execute()
 

@@ -8,7 +8,7 @@ import (
 	"pcfg_tool/internal/utility"
 )
 
-func Parse(rules, lexicon string, n string, path string, input string) error {
+func Parse(rules, lexicon string, n string, unking bool, path string, input string) error {
 	g := grammar.NewGrammar()
 
 	g.SetInitial(n)
@@ -50,7 +50,11 @@ func Parse(rules, lexicon string, n string, path string, input string) error {
 		}
 	}
 
-	p, err := parser.NewParser(g, vs)
+	c := &parser.Config{
+		Unking: unking,
+	}
+
+	p, err := parser.NewParser(g, vs, c)
 
 	if err != nil {
 		return err

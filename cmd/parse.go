@@ -23,6 +23,13 @@ var parseCmd = &cobra.Command{
 		n := cmd.Flag("initial-nonterminal").Value.String()
 		a := cmd.Flag("astar").Value.String()
 
+		var u bool
+		var err error
+
+		if u, err = cmd.Flags().GetBool("unking"); err != nil {
+			log.Fatal(err)
+		}
+
 		if p != ParadigmDeductive {
 			if p == ParadigmCYK {
 				os.Exit(22)
@@ -31,7 +38,7 @@ var parseCmd = &cobra.Command{
 			log.Fatal(errors.New("unknown parser paradigm"))
 		}
 
-		if err := tool.Parse(args[0], args[1], n, a, os.Getenv("STDIN")); err != nil {
+		if err := tool.Parse(args[0], args[1], n, u, a, os.Getenv("STDIN")); err != nil {
 			log.Fatal(err)
 		}
 	},

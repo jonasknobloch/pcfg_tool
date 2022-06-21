@@ -11,7 +11,10 @@ type parse struct {
 	matcher *Matcher
 	grammar *grammar.Grammar
 	viterbi *grammar.ViterbiScores
+	config  *Config
 }
+
+const UnknownToken = "UNK"
 
 func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
@@ -61,6 +64,10 @@ func (p *parse) ItemPriority(i *Item) float64 {
 
 func (p *parse) Initialize() {
 	for i, t := range p.tokens {
+		if p.config.Unking && !p.grammar.Contains(t) {
+			t = UnknownToken
+		}
+
 		for _, r := range p.grammar.Lexicon(t) {
 			lexical := &Item{
 				Span: Span{

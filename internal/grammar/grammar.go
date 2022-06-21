@@ -194,6 +194,12 @@ func (g *Grammar) Lexicon(body string) []*Lexical {
 	return lexicon
 }
 
+func (g *Grammar) Contains(word string) bool {
+	_, ok := g.words[word]
+
+	return ok
+}
+
 func (g *Grammar) Import(rules, lexicon *os.File) error {
 	rS := bufio.NewScanner(rules)
 	lS := bufio.NewScanner(lexicon)

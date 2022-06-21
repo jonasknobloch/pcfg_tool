@@ -1,6 +1,7 @@
 package utility
 
 import (
+	"io"
 	"os"
 	"strconv"
 )
@@ -23,4 +24,18 @@ func CreateFile(name string) (*os.File, error) {
 	}
 
 	return os.Create(name)
+}
+
+func CopyToTemp(file *os.File) (*os.File, error) {
+	temp, err := os.CreateTemp("", "*")
+
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := io.Copy(temp, file); err != nil {
+		return nil, err
+	}
+
+	return temp, nil
 }

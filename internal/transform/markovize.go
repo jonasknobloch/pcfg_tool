@@ -60,7 +60,7 @@ func Markovize(t *tree.Tree, h, v int) {
 			return
 		}
 
-		i := len(ps) - v
+		i := len(ps) - (v - 1)
 		j := len(ps)
 
 		if i < 0 {

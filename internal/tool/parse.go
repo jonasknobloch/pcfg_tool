@@ -32,9 +32,17 @@ func Parse(rules, lexicon string, n string, unking bool, path string, input stri
 		return err
 	}
 
-	var vs *grammar.ViterbiScores
+	c := &parser.Config{
+		Unking: unking,
+	}
 
 	if path != "" {
+		c.AStar = true
+	}
+
+	var vs *grammar.ViterbiScores
+
+	if c.AStar {
 		var o *os.File
 
 		if f, err := os.Open(path); err != nil {
@@ -48,10 +56,6 @@ func Parse(rules, lexicon string, n string, unking bool, path string, input stri
 		if err := vs.ImportOutside(o, g.Symbols); err != nil {
 			return err
 		}
-	}
-
-	c := &parser.Config{
-		Unking: unking,
 	}
 
 	p, err := parser.NewParser(g, vs, c)

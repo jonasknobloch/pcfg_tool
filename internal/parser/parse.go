@@ -55,7 +55,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 }
 
 func (p *parse) ItemPriority(i *Item) float64 {
-	if p.viterbi == nil {
+	if !p.config.AStar {
 		return i.weight
 	}
 

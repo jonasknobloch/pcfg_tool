@@ -39,11 +39,16 @@ func NewParser(g *grammar.Grammar, vs *grammar.ViterbiScores, c *Config) (*Parse
 func (ps *Parser) Parse(tokens []string) (*tree.Tree, error) {
 	p := &parse{
 		tokens:  tokens,
-		heap:    NewHeap(),
 		matcher: NewMatcher(),
 		grammar: ps.grammar,
 		viterbi: ps.viterbi,
 		config:  ps.config,
+	}
+
+	if ps.config.Prune {
+		p.queue = NewRBTree()
+	} else {
+		p.queue = NewHeap()
 	}
 
 	return p.Parse()

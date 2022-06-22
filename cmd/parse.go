@@ -24,9 +24,20 @@ var parseCmd = &cobra.Command{
 		a := cmd.Flag("astar").Value.String()
 
 		var u bool
+		var t float64
+		var r int
+
 		var err error
 
 		if u, err = cmd.Flags().GetBool("unking"); err != nil {
+			log.Fatal(err)
+		}
+
+		if t, err = cmd.Flags().GetFloat64("threshold-beam"); err != nil {
+			log.Fatal(err)
+		}
+
+		if r, err = cmd.Flags().GetInt("rank-beam"); err != nil {
 			log.Fatal(err)
 		}
 
@@ -38,7 +49,7 @@ var parseCmd = &cobra.Command{
 			log.Fatal(errors.New("unknown parser paradigm"))
 		}
 
-		if err := tool.Parse(args[0], args[1], n, u, a, os.Getenv("STDIN")); err != nil {
+		if err := tool.Parse(args[0], args[1], n, u, t, r, a, os.Getenv("STDIN")); err != nil {
 			log.Fatal(err)
 		}
 	},
@@ -51,8 +62,8 @@ func init() {
 	parseCmd.PersistentFlags().BoolP("unking", "u", false, "")
 	parseCmd.PersistentFlags().BoolP("smoothing", "s", false, "")
 
-	parseCmd.PersistentFlags().Int64P("threshold-beam", "t", 0, "")
-	parseCmd.PersistentFlags().Int64P("rank-beam", "r", 0, "")
+	parseCmd.PersistentFlags().Float64P("threshold-beam", "t", 0, "")
+	parseCmd.PersistentFlags().IntP("rank-beam", "r", 0, "")
 	parseCmd.PersistentFlags().Int64P("kbest", "k", 0, "")
 
 	parseCmd.PersistentFlags().StringP("astar", "a", "", "")

@@ -8,7 +8,7 @@ import (
 	"pcfg_tool/internal/utility"
 )
 
-func Parse(rules, lexicon string, n string, unking bool, path string, input string) error {
+func Parse(rules, lexicon string, n string, unking bool, threshold float64, rank int, path string, input string) error {
 	g := grammar.NewGrammar()
 
 	g.SetInitial(n)
@@ -38,6 +38,12 @@ func Parse(rules, lexicon string, n string, unking bool, path string, input stri
 
 	if path != "" {
 		c.AStar = true
+	}
+
+	if threshold != 0 || rank != 0 {
+		c.Prune = true
+		c.Threshold = threshold
+		c.Rank = rank
 	}
 
 	var vs *grammar.ViterbiScores

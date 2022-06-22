@@ -7,7 +7,7 @@ import (
 
 type parse struct {
 	tokens  []string
-	heap    *Heap
+	queue   Queue
 	matcher *Matcher
 	grammar *grammar.Grammar
 	viterbi *grammar.ViterbiScores
@@ -19,8 +19,8 @@ const UnknownToken = "UNK"
 func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
 
-	for !p.heap.Empty() {
-		item, _ := p.heap.Pop()
+	for !p.queue.Empty() {
+		item, _ := p.queue.Pop()
 
 		if ok := p.matcher.Add(item); !ok {
 			continue
@@ -47,6 +47,14 @@ func (p *parse) Parse() (*tree.Tree, error) {
 
 			if len(rule.Body) == 1 {
 				p.Chain(item, rule)
+			}
+		}
+
+		if t, ok := p.queue.(*RBTree); ok {
+			for p.config.Rank == 0 || t.t.Size() > p.config.Rank {
+				if _, ok := t.Prune(p.config.Threshold); !ok {
+					break
+				}
 			}
 		}
 	}
@@ -78,7 +86,7 @@ func (p *parse) Initialize() {
 				weight: r.Weight(),
 			}
 
-			p.heap.Push(lexical, p.ItemPriority(lexical))
+			p.queue.Push(lexical, p.ItemPriority(lexical))
 		}
 	}
 }
@@ -94,7 +102,7 @@ func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {
 		backtracks: [2]*Item{c1, c2},
 	}
 
-	p.heap.Push(i, p.ItemPriority(i))
+	p.queue.Push(i, p.ItemPriority(i))
 }
 
 func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
@@ -108,7 +116,7 @@ func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
 		backtracks: [2]*Item{c, nil},
 	}
 
-	p.heap.Push(i, p.ItemPriority(i))
+	p.queue.Push(i, p.ItemPriority(i))
 }
 
 func (p *parse) Tree(root *Item, tokens []string) (*tree.Tree, error) {

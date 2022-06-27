@@ -74,7 +74,7 @@ func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 
 	key := node.Key.(RBKey)
 
-	if threshold != 0 && key.priority > threshold {
+	if threshold != 0 && key.priority >= threshold {
 		return nil, false
 	}
 

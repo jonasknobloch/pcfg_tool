@@ -68,3 +68,23 @@ func TestRBTree_PushDuplicateWeight(t *testing.T) {
 		t.Fatalf("expected %v or %v but got %v", foo, bar, item)
 	}
 }
+
+func TestRBTree_Prune(t *testing.T) {
+	rb := NewRBTree()
+
+	foo := &Item{weight: 0.25}
+	bar := &Item{weight: 0.5}
+	baz := &Item{weight: 0.75}
+
+	rb.Push(foo, foo.weight)
+	rb.Push(bar, bar.weight)
+	rb.Push(baz, baz.weight)
+
+	if item, ok := rb.Prune(0.25); ok {
+		t.Fatalf("expected %v but got %v", nil, item)
+	}
+
+	if item, ok := rb.Prune(0.5); !ok || item != foo {
+		t.Fatalf("expected %v but got %v", foo, item)
+	}
+}

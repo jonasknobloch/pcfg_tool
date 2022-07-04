@@ -2,6 +2,6 @@ package parser
 
 type Queue interface {
 	Push(*Item, float64)
-	Pop() (*Item, bool)
+	Pop() (*Item, float64, bool)
 	Empty() bool
 }

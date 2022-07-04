@@ -40,11 +40,11 @@ func (h *Heap) Push(item *Item, priority float64) {
 	})
 }
 
-func (h *Heap) Pop() (*Item, bool) {
+func (h *Heap) Pop() (*Item, float64, bool) {
 	val, ok := h.bh.Pop()
 
 	if !ok {
-		return nil, false
+		return nil, 0, false
 	}
 
 	heapItem, ok := val.(HeapItem)
@@ -53,7 +53,7 @@ func (h *Heap) Pop() (*Item, bool) {
 		panic("unexpected item type")
 	}
 
-	return heapItem.item, true
+	return heapItem.item, heapItem.priority, true
 }
 
 func (h *Heap) Empty() bool {

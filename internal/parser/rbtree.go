@@ -49,16 +49,18 @@ func (rb *RBTree) Push(item *Item, priority float64) {
 	}, nil)
 }
 
-func (rb *RBTree) Pop() (*Item, bool) {
+func (rb *RBTree) Pop() (*Item, float64, bool) {
 	node := rb.t.Right()
 
 	if node == nil {
-		return nil, false
+		return nil, 0, false
 	}
 
-	rb.t.Remove(node.Key)
+	key := node.Key.(RBKey)
 
-	return node.Key.(RBKey).item, true
+	rb.t.Remove(key)
+
+	return key.item, key.priority, true
 }
 
 func (rb *RBTree) Empty() bool {
@@ -100,7 +102,7 @@ func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 		}
 	}
 
-	rb.t.Remove(node.Key)
+	rb.t.Remove(key)
 
 	return key.item, true
 }

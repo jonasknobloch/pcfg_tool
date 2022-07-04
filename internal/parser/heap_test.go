@@ -16,7 +16,7 @@ func TestHeap(t *testing.T) {
 	h.Push(baz, baz.weight)
 
 	for _, g := range []*Item{foo, baz, bar} {
-		if i, _ := h.Pop(); i != g {
+		if i, _, _ := h.Pop(); i != g {
 			t.Errorf("%g expected but got %g", i.Weight(), g.Weight())
 		}
 	}

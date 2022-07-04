@@ -20,7 +20,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
 
 	for !p.queue.Empty() {
-		item, _ := p.queue.Pop()
+		item, _, _ := p.queue.Pop()
 
 		if ok := p.matcher.Add(item); !ok {
 			continue

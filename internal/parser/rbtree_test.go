@@ -16,7 +16,7 @@ func TestRBTree(t *testing.T) {
 	rb.Push(baz, bar.weight)
 
 	for _, g := range []*Item{foo, baz, bar} {
-		if i, _ := rb.Pop(); i != g {
+		if i, _, _ := rb.Pop(); i != g {
 			t.Errorf("%g expected but got %g", i.Weight(), g.Weight())
 		}
 	}
@@ -34,7 +34,7 @@ func TestRBTree_PushDuplicateItem(t *testing.T) {
 		t.Fatal("unexpected tree size")
 	}
 
-	item, ok := rb.Pop()
+	item, _, ok := rb.Pop()
 
 	if !ok {
 		t.Fatal("item not ok")
@@ -58,7 +58,7 @@ func TestRBTree_PushDuplicateWeight(t *testing.T) {
 		t.Fatal("unexpected tree size")
 	}
 
-	item, ok := rb.Pop()
+	item, _, ok := rb.Pop()
 
 	if !ok {
 		t.Fatal("item not ok")

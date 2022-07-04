@@ -65,6 +65,18 @@ func (rb *RBTree) Empty() bool {
 	return rb.t.Empty()
 }
 
+func (rb *RBTree) Peek() (*Item, float64, bool) {
+	node := rb.t.Right()
+
+	if node == nil {
+		return nil, 0, false
+	}
+
+	key := node.Key.(RBKey)
+
+	return key.item, key.priority, true
+}
+
 func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 	node := rb.t.Left()
 
@@ -74,8 +86,18 @@ func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 
 	key := node.Key.(RBKey)
 
-	if threshold != 0 && key.priority >= threshold {
-		return nil, false
+	if threshold != 0 {
+		var max float64
+
+		if _, m, ok := rb.Peek(); !ok {
+			return nil, false
+		} else {
+			max = m
+		}
+
+		if key.priority >= max*threshold {
+			return nil, false
+		}
 	}
 
 	defer rb.t.Remove(node.Key)

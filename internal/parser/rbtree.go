@@ -88,18 +88,8 @@ func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 
 	key := node.Key.(RBKey)
 
-	if threshold != 0 {
-		var max float64
-
-		if _, m, ok := rb.Peek(); !ok {
-			return nil, false
-		} else {
-			max = m
-		}
-
-		if key.priority >= max*threshold {
-			return nil, false
-		}
+	if threshold != 0 && key.priority >= threshold {
+		return nil, false
 	}
 
 	rb.t.Remove(key)

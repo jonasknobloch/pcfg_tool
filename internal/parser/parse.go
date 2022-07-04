@@ -51,8 +51,18 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		}
 
 		if t, ok := p.queue.(*RBTree); ok {
+			threshold := p.config.Threshold
+
+			if threshold != 0 {
+				_, priority, ok := t.Peek()
+
+				if ok {
+					threshold *= priority
+				}
+			}
+
 			for p.config.Rank == 0 || t.t.Size() > p.config.Rank {
-				if _, ok := t.Prune(p.config.Threshold); !ok {
+				if _, ok := t.Prune(threshold); !ok {
 					break
 				}
 			}

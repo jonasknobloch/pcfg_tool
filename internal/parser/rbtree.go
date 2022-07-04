@@ -56,7 +56,7 @@ func (rb *RBTree) Pop() (*Item, bool) {
 		return nil, false
 	}
 
-	defer rb.t.Remove(node.Key)
+	rb.t.Remove(node.Key)
 
 	return node.Key.(RBKey).item, true
 }
@@ -100,7 +100,7 @@ func (rb *RBTree) Prune(threshold float64) (*Item, bool) {
 		}
 	}
 
-	defer rb.t.Remove(node.Key)
+	rb.t.Remove(node.Key)
 
 	return key.item, true
 }

@@ -22,14 +22,12 @@ var ErrNoRBTree = errors.New("no red-black tree")
 func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
 
-	var rb *RBTree
+	if p.config.Prune {
+		_, ok := p.queue.(*RBTree)
 
-	if t, ok := p.queue.(*RBTree); !ok {
-		rb = t
-	}
-
-	if p.config.Prune && rb == nil {
-		return nil, ErrNoRBTree
+		if !ok {
+			return nil, ErrNoRBTree
+		}
 	}
 
 	for !p.queue.Empty() {
@@ -46,7 +44,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		threshold := p.config.Threshold
 
 		if p.config.Prune && threshold != 0 {
-			_, priority, ok := rb.Peek()
+			_, priority, ok := p.queue.(*RBTree).Peek()
 
 			if ok {
 				threshold *= priority
@@ -74,8 +72,8 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		}
 
 		if p.config.Prune {
-			for p.config.Rank == 0 || rb.Size() > p.config.Rank {
-				if _, ok := rb.Prune(threshold); !ok {
+			for p.config.Rank == 0 || p.queue.Size() > p.config.Rank {
+				if _, ok := p.queue.(*RBTree).Prune(threshold); !ok {
 					break
 				}
 			}

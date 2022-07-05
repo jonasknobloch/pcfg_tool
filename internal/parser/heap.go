@@ -59,3 +59,7 @@ func (h *Heap) Pop() (*Item, float64, bool) {
 func (h *Heap) Empty() bool {
 	return h.bh.Empty()
 }
+
+func (h *Heap) Size() int {
+	return h.bh.Size()
+}

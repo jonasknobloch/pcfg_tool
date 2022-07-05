@@ -67,6 +67,10 @@ func (rb *RBTree) Empty() bool {
 	return rb.t.Empty()
 }
 
+func (rb *RBTree) Size() int {
+	return rb.t.Size()
+}
+
 func (rb *RBTree) Peek() (*Item, float64, bool) {
 	node := rb.t.Right()
 

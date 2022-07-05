@@ -74,7 +74,7 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		}
 
 		if p.config.Prune {
-			for p.config.Rank == 0 || rb.t.Size() > p.config.Rank {
+			for p.config.Rank == 0 || rb.Size() > p.config.Rank {
 				if _, ok := rb.Prune(threshold); !ok {
 					break
 				}

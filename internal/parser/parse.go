@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"errors"
 	"github.com/jonasknobloch/jinn/pkg/tree"
 	"pcfg_tool/internal/grammar"
 )
@@ -16,8 +17,20 @@ type parse struct {
 
 const UnknownToken = "UNK"
 
+var ErrNoRBTree = errors.New("no red-black tree")
+
 func (p *parse) Parse() (*tree.Tree, error) {
 	p.Initialize()
+
+	var rb *RBTree
+
+	if t, ok := p.queue.(*RBTree); !ok {
+		rb = t
+	}
+
+	if p.config.Prune && rb == nil {
+		return nil, ErrNoRBTree
+	}
 
 	for !p.queue.Empty() {
 		item, _, _ := p.queue.Pop()
@@ -30,39 +43,39 @@ func (p *parse) Parse() (*tree.Tree, error) {
 			return p.Tree(item, p.tokens)
 		}
 
+		threshold := p.config.Threshold
+
+		if p.config.Prune && threshold != 0 {
+			_, priority, ok := rb.Peek()
+
+			if ok {
+				threshold *= priority
+			}
+		}
+
 		for _, rule := range p.grammar.Rules(item.n) {
 			if len(rule.Body) == 2 {
 				if rule.Body[0] == item.n {
 					for _, c := range p.matcher.MatchLeft(item.j, rule.Body[1]) {
-						p.Combine(item, c, rule)
+						p.Push(p.Combine(item, c, rule), threshold)
 					}
 				}
 
 				if rule.Body[1] == item.n {
 					for _, c := range p.matcher.MatchRight(rule.Body[0], item.i) {
-						p.Combine(c, item, rule)
+						p.Push(p.Combine(c, item, rule), threshold)
 					}
 				}
 			}
 
 			if len(rule.Body) == 1 {
-				p.Chain(item, rule)
+				p.Push(p.Chain(item, rule), threshold)
 			}
 		}
 
-		if t, ok := p.queue.(*RBTree); ok {
-			threshold := p.config.Threshold
-
-			if threshold != 0 {
-				_, priority, ok := t.Peek()
-
-				if ok {
-					threshold *= priority
-				}
-			}
-
-			for p.config.Rank == 0 || t.t.Size() > p.config.Rank {
-				if _, ok := t.Prune(threshold); !ok {
+		if p.config.Prune {
+			for p.config.Rank == 0 || rb.t.Size() > p.config.Rank {
+				if _, ok := rb.Prune(threshold); !ok {
 					break
 				}
 			}
@@ -96,13 +109,13 @@ func (p *parse) Initialize() {
 				weight: r.Weight(),
 			}
 
-			p.queue.Push(lexical, p.ItemPriority(lexical))
+			p.Push(lexical, 0)
 		}
 	}
 }
 
-func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {
-	i := &Item{
+func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) *Item {
+	return &Item{
 		Span: Span{
 			i: c1.i,
 			j: c2.j,
@@ -111,12 +124,10 @@ func (p *parse) Combine(c1, c2 *Item, ri *grammar.NonLexical) {
 		weight:     c1.Weight() * c2.Weight() * ri.Weight(),
 		backtracks: [2]*Item{c1, c2},
 	}
-
-	p.queue.Push(i, p.ItemPriority(i))
 }
 
-func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
-	i := &Item{
+func (p *parse) Chain(c *Item, ri *grammar.NonLexical) *Item {
+	return &Item{
 		Span: Span{
 			i: c.i,
 			j: c.j,
@@ -125,8 +136,18 @@ func (p *parse) Chain(c *Item, ri *grammar.NonLexical) {
 		weight:     c.Weight() * ri.Weight(),
 		backtracks: [2]*Item{c, nil},
 	}
+}
 
-	p.queue.Push(i, p.ItemPriority(i))
+func (p *parse) Push(item *Item, threshold float64) bool {
+	priority := p.ItemPriority(item)
+
+	if threshold != 0 && priority < threshold {
+		return false
+	}
+
+	p.queue.Push(item, priority)
+
+	return true
 }
 
 func (p *parse) Tree(root *Item, tokens []string) (*tree.Tree, error) {

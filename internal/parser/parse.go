@@ -72,7 +72,13 @@ func (p *parse) Parse() (*tree.Tree, error) {
 		}
 
 		if p.config.Prune {
-			for p.config.Rank == 0 || p.queue.Size() > p.config.Rank {
+			for p.config.Rank != 0 && p.queue.Size() > p.config.Rank {
+				if _, ok := p.queue.(*RBTree).Prune(0); !ok {
+					break
+				}
+			}
+
+			for threshold != 0 {
 				if _, ok := p.queue.(*RBTree).Prune(threshold); !ok {
 					break
 				}
